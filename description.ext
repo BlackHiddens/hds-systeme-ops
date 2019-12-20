@@ -1,0 +1,123 @@
+author="Hidden's";
+OnLoadName = "Hidden's|hds";
+
+RespawnOnStart = 0;
+respawnDelay = 10;
+respawnVehicleDelay = 10;
+disabledAI = 1;
+respawnDialog = 1;
+respawn = 3;
+ticketWEST = 10;
+respawnTemplates[] = {"MenuPosition","Tickets"};
+
+//Activation de la debug console
+enableDebugConsole[] = {"76561198024919122"};
+//Chargement de l'interface gcam
+#include "gcam\gcam_component.hpp"
+/* //Chargement de l'interface hdssystem
+#include "hdssystem\modules\occupations\h-interfaces\defines.hpp"
+#include "hdssystem\modules\occupations\h-interfaces\fenetre_recrutementpersocustom.hpp" */
+
+class CfgFunctions
+{
+	#include "hdssystem\modules\commandant\init.hpp"
+};
+
+class CfgMusic
+{
+	class hds_tension_alert
+	{
+	name = "hds_tension_alert";
+	sound[] = {"hdssystem\sons\tension-alert.ogg",db+0,1.0};
+	titles[] = {1,""};
+	};
+/*
+	sounds[] = {DP_Enemy,LP_Nouveau_Defi};
+
+	class hds_action
+	{
+	name = "hds_action";
+	sound[] = {"hdssystem\sons\hds_action.ogg",db+0,1.0};
+	titles[] = {1,""};
+	};
+	//--
+	class hds_alert
+	{
+	name = "hds_alert";
+	sound[] = {"hdssystem\sons\no-alert.ogg",db+0,1.0};
+	titles[] = {1,""};
+	};
+	//--
+
+	//--
+	class hds_topaction_alert
+	{
+	name = "hds_topaction_alert";
+	sound[] = {"hdssystem\sons\top-action-alert.ogg",db+0,1.0};
+	titles[] = {1,""};
+	}; */
+
+};
+class CfgSounds
+{
+		 //Exemple d'utilisation
+
+		 /* sounds[] = {DP_Enemy,LP_Nouveau_Defi};
+
+     class mia
+     {
+     name = "mia";
+     sound[] = {"hdssystem\sons\mia.ogg", 1, 1};
+     titles[] = {1,""};
+     }; */
+
+     /*
+     class LP_Nouveau_Defi
+     {
+     name = "LP_Nouveau_Defi";
+     sound[] = {"defsystem\sons\LP_Nouveau_Defi.ogg", 1, 1};
+     titles[] = {1, ""};
+     }; */
+};
+class CfgSFX
+{
+	sounds[] = {};
+	class hds_brieffing
+	{
+		name = "hds_brieffing";
+		sounds[]={brieffing};
+		miasound[]={"hdssystem\sons\brieffing.ogg",5,1,30,1,1,1,0};
+		empty[]= {"",0,0,0,0,0,0,0};
+	};
+	/*
+	class hawaii
+	{
+		name = "hawaii";
+		sounds[]={hawaii};
+		hawaii[]={"hdssystem\sons\hawaii.ogg",5,1,30,1,1,1,0};
+		empty[]= {"",0,0,0,0,0,0,0};
+	}; */
+};
+class CfgCommunicationMenu
+{
+	class Renfort_terrestre
+	{
+		text = "call contrator | appeler des mercenaires";
+		submenu = "";
+		expression = "[player] spawn fnc_renfort_allie;";
+		icon = "\a3\Ui_f\data\GUI\Cfg\CommunicationMenu\call_ca.paa";
+		cursor = "";
+		enable = 1;
+		removeAfterExpressionCall = 0;
+	};
+	class Executer_gcam
+	{
+		text = "executed camera | exécuter la camera";
+		submenu = "";
+		expression = "[player] execVM 'gcam\gcam.sqf';";
+		icon = "a3\Ui_f\data\GUI\Cfg\RespawnRoles\recon_ca.paa";
+		cursor = "";
+		enable = 1;
+		removeAfterExpressionCall = 0;
+	};
+};

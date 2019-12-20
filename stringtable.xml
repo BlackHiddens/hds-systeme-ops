@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project name="hds">
+    <Package name="operations">
+      <Container name="missions">
+        <Key ID="str_hds_objectif_communication">
+            <English>destroy antenna</English>
+            <French>détruire antenne</French>
+            <Spanish>destruir antena</Spanish>
+        </Key>
+        <Key ID="str_hds_objectif_otage">
+            <English>extract the hostage</English>
+            <French>extraire l'otage</French>
+            <Spanish>extraer el rehén</Spanish>
+        </Key>
+        <Key ID="str_hds_objectif_logistique">
+            <English>destroy refueling</English>
+            <French>détruire ravitaillement</French>
+            <Spanish>destruir reabastecimiento de combustible</Spanish>
+        </Key>
+        <Key ID="str_hds_objectif_hvt">
+            <English>eliminate the officer</English>
+            <French>éliminer l'officier</French>
+            <Spanish>eliminar al oficial</Spanish>
+        </Key>
+        <Key ID="str_hds_objectif_infos">
+            <English>find the briefcase</English>
+            <French>trouver la mallette</French>
+            <Spanish>encuentra el maletín</Spanish>
+        </Key>
+        <Key ID="str_hds_objectif_piratage">
+            <English>download the data</English>
+            <French>télécharger les données</French>
+            <Spanish>descargar los datos</Spanish>
+        </Key>
+        <Key ID="str_hds_objectif_structure">
+            <English>take the structure</English>
+            <French>prendre la structure</French>
+            <Spanish>tomar la estructura</Spanish>
+        </Key>
+        <Key ID="str_hds_objectif_cache">
+            <English>destroy the weapon case</English>
+            <French>détruire la caisse d'arme</French>
+            <Spanish>destruye la caja del arma</Spanish>
+        </Key>
+        <Key ID="str_hds_objectif_arrestation">
+            <English>capture the officer</English>
+            <French>capturer l'officier</French>
+            <Spanish>capturar al oficial</Spanish>
+        </Key>
+        <Key ID="str_hds_objectif_securiser">
+            <English>securing the sector</English>
+            <French>sécuriser le secteur</French>
+            <Spanish>asegurando el sector</Spanish>
+        </Key>
+      </container>
+
+      <Container name="garage virtuel">
+        <Key ID="str_hds_virtualgarage_acheter">
+            <English>buy</English>
+            <French>acheter</French>
+            <Spanish>Comprar</Spanish>
+        </Key>
+        <Key ID="str_hds_virtualgarage_description">
+            <English>buy this vehicle with your points</English>
+            <French>acheter ce vehicule avec vos points</French>
+            <Spanish>Compra este vehículo con tus puntos</Spanish>
+        </Key>
+      </Container>
+
+      <Container name="fonction de base">
+        <Key ID="hds_txt_fonctions_medical_santestable">
+            <English>your condition is stable again</English>
+            <French>votre état est de nouveau stable</French>
+            <Spanish>tu condición es estable de nuevo</Spanish>
+        </Key>
+        <Key ID="str_hds_fonctions_arsenal_libinteraction">
+            <English>open the virtual arsenal</English>
+            <French>ouvrir l'arsenal virtuel</French>
+            <Spanish>abrir el arsenal virtual</Spanish>
+        </Key>
+        <Key ID="str_hds_fonctions_divers_libcommandervehicule">
+            <English>order a vehicle</English>
+            <French>commander un véhicule</French>
+            <Spanish>pedir un vehículo</Spanish>
+        </Key>
+        <Key ID="str_hds_fonctions_divers_librecruterequipe">
+            <English>recruit a team</English>
+            <French>recruter une équipe</French>
+            <Spanish>reclutar un equipo</Spanish>
+        </Key>
+        <Key ID="str_hds_fonctions_divers_libdebloquermission">
+            <English>ignore a task</English>
+            <French>ignorer une tâche</French>
+            <Spanish>ignorar una tarea</Spanish>
+        </Key>
+        <Key ID="str_hds_fonctions_divers_libdebloquermissionignorer">
+            <English>task(s) was ignored</English>
+            <French>tâche(s) à été ignorée(s)</French>
+            <Spanish>tarea(s) fue ignorada</Spanish>
+        </Key>
+        <Key ID="str_hds_fonctions_divers_libdebloquermissionnonexiste">
+            <English>no tasks are currently detected</English>
+            <French>aucune tâches n'est détecté actuellement</French>
+            <Spanish>no se detectan tareas actualmente</Spanish>
+        </Key>
+        <Key ID="str_hds_fonctions_divers_libsautenparachute">
+            <English>organize a parachute jump</English>
+            <French>organiser un saut en parachute</French>
+            <Spanish>organizar un salto en paracaídas</Spanish>
+        </Key>
+        <Key ID="str_hds_fonctions_divers_descsautenparachute">
+            <English>select the deployment position</English>
+            <French>sélectionner la position de déploiement</French>
+            <Spanish>seleccione la posición de despliegue</Spanish>
+        </Key>
+        <Key ID="str_hds_fonctions_divers_appelmercenaire">
+            <English>call mercenaries</English>
+            <French>appeler des mercenaires</French>
+            <Spanish>llamar mercenarios</Spanish>
+        </Key>
+        <Key ID="str_hds_fonctions_divers_executegcam">
+            <English>run the kinematic camera</English>
+            <French>exécuter la caméra cinématique</French>
+            <Spanish>corre la cámara cinemática</Spanish>
+        </Key>
+      </Container>
+    </Package>
+</Project>

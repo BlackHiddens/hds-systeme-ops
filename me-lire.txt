@@ -1,0 +1,24 @@
+Bienvenu dans les ai_hds_systeme, l'aide de developpement de mission
+
+Listes de ce que fait le scripts
+--Comportement Automatique
+---Désactive les IA à la connexion
+---Force la première réapparition sans prendre en compte les marqueurs de réapparition
+---Crée un respawn automatiquement en calculant la meilleur position pour cela.
+---Crée un marqueur blufor sur la premiere zone d'apparition
+---Détecte et active les addons potentiellement utilisable par le script
+
+--Comportement activable
+---Etablir une liste d'objet soignant automatiquement
+---Etablir une liste d'objet servant d'arsenal complet
+---Choisir si le lieu médical est un objet ou un véhicule (Détails)
+
+Liste des variables
+---sontdesarsenales <tableau>
+---sontdespostesdecommunications <tableau>
+---sontdeslieuxdesoin <tableau>
+---sontdesmanageurs <tableau>
+---sontdesexpertcoms <tableau>
+---sontdesingenieurs <tableau>
+---sontdespilotes <tableau>
+---sontdescontractor <tableau>

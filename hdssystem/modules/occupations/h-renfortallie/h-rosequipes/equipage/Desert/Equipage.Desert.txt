@@ -1,0 +1,44 @@
+comment "Exported from Arsenal by Defconleader";
+
+comment "Remove existing items";
+removeAllWeapons this;
+removeAllItems this;
+removeAllAssignedItems this;
+removeUniform this;
+removeVest this;
+removeBackpack this;
+removeHeadgear this;
+removeGoggles this;
+
+comment "Add containers";
+this forceAddUniform "NatoU_USD";
+for "_i" from 1 to 2 do {this addItemToUniform "ACE_IR_Strobe_Item";};
+for "_i" from 1 to 10 do {this addItemToUniform "ACE_elasticBandage";};
+for "_i" from 1 to 10 do {this addItemToUniform "ACE_packingBandage";};
+for "_i" from 1 to 4 do {this addItemToUniform "ACE_tourniquet";};
+this addItemToUniform "ACE_microDAGR";
+this addItemToUniform "ACE_Flashlight_XL50";
+this addItemToUniform "ACE_Fortify";
+this addItemToUniform "ACE_EarPlugs";
+this addVest "TacVest_TigerVrs";
+for "_i" from 1 to 3 do {this addItemToVest "SmokeShellGreen";};
+for "_i" from 1 to 2 do {this addItemToVest "rhsusf_mag_15Rnd_9x19_JHP";};
+for "_i" from 1 to 7 do {this addItemToVest "rhsusf_mag_40Rnd_46x30_FMJ";};
+this addHeadgear "rhsusf_cvc_ess";
+
+comment "Add weapons";
+this addWeapon "rhsusf_weap_MP7A2";
+this addPrimaryWeaponItem "SMA_eotech";
+this addWeapon "rhsusf_weap_m9";
+this addWeapon "Laserdesignator_01_khk_F";
+
+comment "Add items";
+this linkItem "ItemMap";
+this linkItem "ItemCompass";
+this linkItem "tf_microdagr";
+this linkItem "tf_anprc152_3";
+this linkItem "NVGoggles";
+
+comment "Set identity";
+this setFace "WhiteHead_08";
+this setSpeaker "ace_novoice";

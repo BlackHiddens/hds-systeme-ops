@@ -1,0 +1,51 @@
+comment "Exported from Arsenal by Hiddens";
+params ["_soldat"];
+comment "Remove existing items";
+removeAllWeapons (_this select 0);
+removeAllItems (_this select 0);
+removeAllAssignedItems (_this select 0);
+removeUniform (_this select 0);
+removeVest (_this select 0);
+removeBackpack (_this select 0);
+removeHeadgear (_this select 0);
+removeGoggles (_this select 0);
+
+comment "Add containers";
+(_this select 0) forceAddUniform "CamoU_MarpatD_rs";
+(_this select 0) addVest "mbss_TL_od";
+for "_i" from 1 to 7 do {(_this select 0) addItemToVest "ACE_elasticBandage";};
+for "_i" from 1 to 7 do {(_this select 0) addItemToVest "ACE_packingBandage";};
+(_this select 0) addItemToVest "ACE_EarPlugs";
+(_this select 0) addItemToVest "ACE_morphine";
+(_this select 0) addItemToVest "ACE_microDAGR";
+(_this select 0) addItemToVest "ACE_CableTie";
+(_this select 0) addItemToVest "ACE_surgicalKit";
+for "_i" from 1 to 4 do {(_this select 0) addItemToVest "ACE_tourniquet";};
+for "_i" from 1 to 3 do {(_this select 0) addItemToVest "11Rnd_45ACP_Mag";};
+for "_i" from 1 to 3 do {(_this select 0) addItemToVest "HandGrenade";};
+(_this select 0) addItemToVest "ACE_M84";
+for "_i" from 1 to 5 do {(_this select 0) addItemToVest "SmokeShell";};
+for "_i" from 1 to 8 do {(_this select 0) addItemToVest "rhs_mag_30Rnd_556x45_M855A1_PMAG_Tracer_Red";};
+(_this select 0) addItemToVest "SmokeShellGreen";
+(_this select 0) addBackpack "backpack_1_OD";
+(_this select 0) addHeadgear "Mohawk_Core_ESS_tan";
+(_this select 0) addGoggles "G_Combat";
+
+comment "Add weapons";
+(_this select 0) addWeapon "rhs_weap_hk416d10_LMT";
+(_this select 0) addPrimaryWeaponItem "acc_flashlight";
+(_this select 0) addPrimaryWeaponItem "optic_Hamr";
+(_this select 0) addPrimaryWeaponItem "rhsusf_acc_grip2";
+(_this select 0) addWeapon "hgun_Pistol_heavy_01_F";
+(_this select 0) addWeapon "Binocular";
+
+comment "Add items";
+(_this select 0) linkItem "ItemMap";
+(_this select 0) linkItem "ItemCompass";
+(_this select 0) linkItem "ItemWatch";
+(_this select 0) linkItem "tf_anprc152";
+(_this select 0) linkItem "ItemGPS";
+
+comment "Set identity";
+(_this select 0) setFace "AfricanHead_01";
+(_this select 0) setSpeaker "male10eng";
