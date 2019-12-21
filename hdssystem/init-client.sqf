@@ -249,30 +249,24 @@
 
 //---------------------------------------------
 
-
+/*
   ["LeadTrack01_F_Tacops",
  true,
     [
-      "Une cible de haute prioritée à été repérée à Malden",
-      "Neutralisez la cible et confirmez cela par photo",
-      "Vous serez inséré par bateaux et devriez vous extraire par INDIA ou BRAVO",
-      "Bonne chance"
+      "Résumer de l'opération",
+      "Sur plusieurs écran scénarisé"
     ]
   ] call fnc_hds_introduction;
+*/
 
-
-/*
   [
   "
-  Vous êtes actuellement dans la base des Rangers.<br/><br/>
+  L'hélipad est maintenant un ravitaillement automatique pour les véhicules.<br/><br/>
   "
   ] spawn fnc_fnc_informations;
 
   [
     [
-      ["Lundi 20 juin 2018","17h25","Clafghan"],
-      ["Operation Gospel Ghost"],
-      ["Scénario","Adams,Hiddens"]
+      ["Altis"]
     ]
   ] call fnc_hds_soustitre;
-  */

@@ -16,7 +16,7 @@ if(isnil "_Batiments_occupable")exitWith{
 };
 
 //--------------------------Création de marqueur----------------------------------
-_marqueurzonedecombat = [(getpos _Batiments_occupable),(_this select 3),"colorOPFOR"] call fnc_objectif_creermarqueur;
+_marqueurzonedecombat = [(_this select 0),(_this select 3),"colorOPFOR"] call fnc_objectif_creermarqueur;
 _marqueurdemission = [((_marqueurzonedecombat call bis_fnc_randomPosTrigger)),(_this select 3),"colorOPFOR"] call fnc_objectif_creermarqueur;
 
 _marqueurzonedecombat setMarkerAlpha 0;

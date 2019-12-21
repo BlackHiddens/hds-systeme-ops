@@ -15,8 +15,9 @@
 
 /* --- Exécution des fonctions d'ambiance du scénario --- */
 [] spawn fnc_engima_traffic;   // raffic civils sur routes
+
 [5,west] call fnc_renfort_init;
-[0,0,10] call fnc_scenario_init; //[nombre tache initial scenario, renumeration, point de vihicule]
+[0,0,99] call fnc_scenario_init; //[nombre tache initial scenario, renumeration, point de vihicule]
 
 /*
 [[2513.287,3156.919,0],3,4,150,false]  spawn fnc_hds_occupations;
@@ -33,12 +34,8 @@ https://community.bistudio.com/wiki/Location
 
 //----- Début du scénario -------
 
-/*
-mission généré automatiquement (rayon,faction,nbsmission,nbstache,lieupossible)
 [500,6,5,3,["NameVillage","NameCity","NameLocal","Name"],true,true,3] spawn fnc_hds_missions;
-*/
 
-[arsenal] call fnc_hds_arsenal_complet;
 
 /*
 

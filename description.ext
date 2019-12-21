@@ -2,8 +2,8 @@ author="Hidden's";
 OnLoadName = "Hidden's|hds";
 
 RespawnOnStart = 0;
-respawnDelay = 10;
-respawnVehicleDelay = 10;
+respawnDelay = 5;
+respawnVehicleDelay = 5;
 disabledAI = 1;
 respawnDialog = 1;
 respawn = 3;

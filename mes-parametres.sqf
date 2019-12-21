@@ -4,10 +4,11 @@ hdsnombase = ["hds-ros-base"];  //placer un marqueur sur votre base afin qu'elle
 hdssysteme = false;              //hds-systeme-ops en mode débug. il annonce tous ce qu'il fait
 //Tous mes objets scriptés
 lelieuestunvehicule = false;     //Le lieu médical est un véhicule ? sinon c'est un lieu
-sontdeslieudesoin = [];    //Liste des objets qui sont des lieux de soins
-sontdesarsenales = [];          //Liste des objets qui sont des arsenales
-sontdespostesdecommunications = []; //liste des objets qui sont des terminal de communications (Il met à disposition des ressources pour les joueurs)
-estungarage = [];//Liste des objets pouvant faire aussi de terminal de garage ainsi que la position de spawn des véhicules achetés
+sontdeslieudesoin = [soins];    //Liste des objets qui sont des lieux de soins
+sontdesarsenales = [arsenal_console];          //Liste des objets qui sont des arsenales
+sontdespostesdecommunications = [arsenal_console]; //liste des objets qui sont des terminal de communications (Il met à disposition des ressources pour les joueurs)
+estungarage = [arsenal_console,[8237.49,10049.9,-7.62939e-006]];//[<objet>,<position>]
+estunravitaillement = [[8237.49,10049.9,-7.62939e-006],10]; //[<position>,<rayon>]
 
 sontdesmanageurs = ["chef_one","chef_two","invite_0"];
 sontdesexpertcoms = ["communication_one","communication_two","invite_1"];
@@ -67,6 +68,7 @@ fnc_hds_arsenaux = compile preprocessFile "hdssystem\fonctions\arsenaux.sqf";//[
   fnc_hds_arsenal_numb = compile preprocessFile "hdssystem\fonctions\arsenaux\numb.sqf";
   fnc_hds_poste_de_communication = compile preprocessFile "hdssystem\fonctions\postedecommunication.sqf";
 fnc_hds_garages = compile preprocessFile "virtualgarage\virtualgarage.sqf";
+fnc_hds_ravitaillement = compile preprocessFile "hdssystem\fonctions\ops-rearmement.sqf";
 fnc_hds_medical = compile preprocessFile "hdssystem\fonctions\lieumedical.sqf";//[Liste d'objet:<tableau>] spawn fnc_hds_medical;
 fnc_hds_peuposerattelle = compile preprocessFile "hdssystem\fonctions\poseattelle.sqf";//[<Utilisateur:Objet>] spawn fnc_hds_peuposerattelle;
 fnc_hds_pointreapparition = compile preprocessFile "hdssystem\fonctions\pointderespawn.sqf";//[] spawn fnc_hds_pointreapparition;

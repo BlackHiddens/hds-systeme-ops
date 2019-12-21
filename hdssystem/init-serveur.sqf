@@ -33,7 +33,6 @@ civilian setFriend [independent,1];
 
 //création un point de réapparition ainsi qu'un marqueur de zone à l'emplacement du premier joueurs se connectant au serveur
 
-
 {
   waituntil {count allPlayers > 0};
   waituntil {isTouchingGround selectrandom allplayers};
@@ -53,6 +52,7 @@ civilian setFriend [independent,1];
 
 } spawn BIS_fnc_spawn;
 
+[(estunravitaillement select 0),(estunravitaillement select 1)] spawn fnc_hds_ravitaillement;
 
 hds_administrateur_alpha = (creategroup sidelogic) createunit ["ModuleCurator_F",[0,0,0],[],0,"NONE"];
 hds_administrateur_alpha setvariable ['BIS_fnc_initModules_disableAutoActivation',false,true];
