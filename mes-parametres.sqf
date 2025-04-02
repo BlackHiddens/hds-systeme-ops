@@ -8,7 +8,10 @@ sontdeslieudesoin = [soins];    //Liste des objets qui sont des lieux de soins
 sontdesarsenales = [arsenal_console];          //Liste des objets qui sont des arsenales
 sontdespostesdecommunications = [arsenal_console]; //liste des objets qui sont des terminal de communications (Il met à disposition des ressources pour les joueurs)
 estungarage = [arsenal_console,[8237.49,10049.9,-7.62939e-006]];//[<objet>,<position>]
-estunravitaillement = [[8237.49,10049.9,-7.62939e-006],10]; //[<position>,<rayon>]
+estunravitaillement = [
+                        [8237.49,10049.9,-7.62939e-006],
+                        10]; 
+//[<position>,<rayon>]
 
 sontdesmanageurs = ["chef_one","chef_two","invite_0"];
 sontdesexpertcoms = ["communication_one","communication_two","invite_1"];
