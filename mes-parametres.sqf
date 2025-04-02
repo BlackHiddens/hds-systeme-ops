@@ -10,7 +10,8 @@ sontdespostesdecommunications = [arsenal_console]; //liste des objets qui sont d
 estungarage = [arsenal_console,[8237.49,10049.9,-7.62939e-006]];//[<objet>,<position>]
 estunravitaillement = [
                         [8237.49,10049.9,-7.62939e-006],
-                        10]; 
+                        10
+                      ]; 
 //[<position>,<rayon>]
 
 sontdesmanageurs = ["chef_one","chef_two","invite_0"];
