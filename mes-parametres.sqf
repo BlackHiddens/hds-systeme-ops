@@ -18,7 +18,7 @@ sontdespilotes = ["pilote_one","pilote_two","invite_5"];
 sontdescontractor = ["contractor_1","contractor_2","contractor_3","contractor_4","contractor_5","contractor_6"];
 
 sontdesappuismanageurs = [radio_appui];
-sontdesappuisexoertcoms = [radio_appui];
+sontdesappuisexpertcoms = [radio_appui];
 sontdesappuismedicals = [radio_appui];
 sontdesappuisingenieurs = [radio_appui];
 sontdesappuispilotes = [radio_appui];
@@ -35,7 +35,7 @@ if (isClass(configFile >> "CfgPatches" >> "po_main"))then{opforactive = true}els
 if (isClass(configFile >> "CfgPatches" >> "rhs_main"))then{afrfactive = true}else{afrfactive = false};              //rhsafrf
 if (isClass(configFile >> "CfgPatches" >> "rhsusf_main"))then{usafactive = true}else{usafactive = false};           //rhsusaf
 if (isClass(configFile >> "CfgPatches" >> "FFCamoPack_Common"))then{foxforactive = true}else{foxforactive = false}; //foxforCamoPack
-if (isClass(configFile >> "CfgPatches" >> "COS_equips"))then{cosactive = true}else{cosforactive = false};           //C.O.S
+cosactive = isClass (configFile >> "CfgPatches" >> "COS_equips");           //C.O.S
 if (isClass(configFile >> "CfgPatches" >> "rds_A2_Civilians"))then{rdsactive = true}else{rdsactive = false};        //RDS Civilian Pack
 if (isClass(configFile >> "CfgPatches" >> "Project_Numb_3"))then{numbactive = true}else{numbactive = false};        //Project_Numb_3 activé
 

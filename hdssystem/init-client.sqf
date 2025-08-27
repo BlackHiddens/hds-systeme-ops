@@ -7,17 +7,17 @@
         player setVariable ["ace_medical_medicClass",1,true];
         player setUnitTrait ["Medic",true];
         {_x synchronizeObjectsAdd [player]} foreach sontdesappuismedicals;
-    }
+      };
     } foreach sontdesmedecins;
     //---------------------------------------------------------------------
 
     //configuration des expert en transmission-----------------------------
     {
       if(vehiclevarname player isequalto _x)then{
-      [player,"Renfort_terrestre"] call bis_fnc_addcommMenuItem;
-      player setUnitTrait ["UAVHacker",true];
-      {_x synchronizeObjectsAdd [player]} foreach sontdesappuisexoertcoms;
-    }
+        [player,"Renfort_terrestre"] call bis_fnc_addcommMenuItem;
+        player setUnitTrait ["UAVHacker",true];
+        {_x synchronizeObjectsAdd [player]} foreach sontdesappuisexpertcoms;
+      };
     } foreach sontdesexpertcoms;
     //----------------------------------------------------------------------
 
