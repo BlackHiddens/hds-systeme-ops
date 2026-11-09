@@ -1,5 +1,7 @@
 # Référence des fonctions
 
+> **Page de consultation.** Tu n'as pas besoin de la lire en entier : cherche seulement la fonction qui t'intéresse. Pour débuter, tout est sur la [page d'accueil](Home).
+
 Tous les paramètres sont à passer **dans l'ordre**, entre crochets, avant le nom de la fonction.
 
 ```sqf
@@ -56,7 +58,7 @@ Tous les paramètres sont à passer **dans l'ordre**, entre crochets, avant le n
 | 0 | nombre | entier | Nombre d'appels de renfort disponibles |
 | 1 | camp | camp | Camp des renforts |
 
-Un joueur appelle le renfort par le menu de communication **« appeler des mercenaires »** (voir [Configuration](Configuration#les-slots-joueurs)). Il clique sur la carte et un groupe de 8 soldats se met en route.
+Un joueur appelle le renfort par le menu de communication **« appeler des mercenaires »** (voir [Options avancées](Options-avancees#les-slots-joueurs)). Il clique sur la carte et un groupe de 8 soldats se met en route.
 
 ### `fnc_engima_traffic`
 

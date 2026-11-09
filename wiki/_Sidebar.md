@@ -1,19 +1,14 @@
 **hds-ops**
 
-- [Accueil](Home)
+- [Accueil : les 3 étapes](Home)
 
-**Démarrer**
+**Aller plus loin**
 
-- [Installation](Installation)
-- [Configuration](Configuration)
-- [Écrire son scénario](Ecrire-son-scenario)
-
-**Référence**
-
-- [Fonctions](Reference-des-fonctions)
+- [Options avancées](Options-avancees)
+- [Référence des fonctions](Reference-des-fonctions)
 - [Factions](Factions)
 
-**Avancé**
+**Besoin d'aide**
 
-- [Architecture](Architecture)
 - [Dépannage](Depannage)
+- [Architecture (développeurs)](Architecture)

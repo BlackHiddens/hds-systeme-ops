@@ -16,11 +16,11 @@ hds-ops annonce alors dans le chat système chaque étape de la génération de 
 
 | Symptôme | Cause probable | Solution |
 |---|---|---|
-| Erreurs au démarrage du serveur | ACE3 ou CBA_A3 absent | Charge les deux addons (voir [Installation](Installation#1-prérequis)) |
+| Erreurs au démarrage du serveur | ACE3 ou CBA_A3 absent | Charge les deux addons (voir [Avant de commencer](Home#avant-de-commencer)) |
 | Une mission d'otages aléatoire ne se termine jamais | Aucun marqueur ne porte le nom de `hdsnombase` : l'otage ne peut pas être « ramené à la base » | Pose dans l'éditeur un marqueur nommé comme `hdsnombase` (par défaut `hds-ros-base`) sur ta base |
-| Un `waituntil {tache_scenario > 1}` ne se déclenche jamais | Avec une seule tâche, `tache_scenario` vaut 1 | Utilise `> 0` ou `>= 1`. Voir [Écrire son scénario](Ecrire-son-scenario#le-compteur-de-tâches-tache_scenario) |
+| Un `waituntil {tache_scenario > 1}` ne se déclenche jamais | Avec une seule tâche, `tache_scenario` vaut 1 | Utilise `> 0` ou `>= 1`. Voir [Écrire ta propre histoire](Home#écrire-ta-propre-histoire) |
 | `fnc_hds_missions` ne crée aucun objectif ou génère une erreur | Le 8e paramètre (nombre de tâches) manque | Ajoute-le : 8 paramètres sont obligatoires ([Référence](Reference-des-fonctions#fnc_hds_missions)) |
-| Un slot n'a pas ses capacités (médecin, menu de renfort…) | Le nom du slot ne correspond pas au nom de variable de l'éditeur, ou il est écrit sans guillemets | Slots : noms **entre guillemets**, casse exacte (voir [Configuration](Configuration#les-slots-joueurs)) |
+| Un slot n'a pas ses capacités (médecin, menu de renfort…) | Le nom du slot ne correspond pas au nom de variable de l'éditeur, ou il est écrit sans guillemets | Slots : noms **entre guillemets**, casse exacte (voir [Options avancées](Options-avancees#les-slots-joueurs)) |
 | Un objet (arsenal, lieu de soins…) ne fonctionne pas | Son nom a été mis entre guillemets, ou n'existe pas dans l'éditeur | Objets : noms **sans guillemets** |
 | Les appuis d'un rôle ne fonctionnent pas | Faute dans le nom de la variable | Le nom correct est `sontdesappuisexpertcoms` (et non « exoertcoms ») |
 | La faction demandée apparaît en CSAT | L'addon de cette faction n'est pas chargé | Voir le tableau des [Factions](Factions) |
