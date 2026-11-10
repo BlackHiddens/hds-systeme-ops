@@ -1,191 +1,167 @@
-# Hiddens Système Opérations (hds-ops)
+# Le hiddens-système-opération (hds-ops)
 
-**hds-ops crée tes missions Arma 3 à ta place.** Tu choisis où ça se passe. Il place les ennemis, les civils, les objectifs et les renforts. Toi, tu t'occupes de l'ambiance.
+Ce projet est un Framework de développement ArmA3. Il permet d’éditer et de développer des missions complexes et scénarisées en un temps record. Grâce à cela, il est possible de se concentrer sur les détails du scénario et non sur la technique et les limites du possible. passez plus de temps sur l'ambiance de mission sera plus simple.
 
-Il règle aussi les petits détails qu'on oublie : les IA des slots sont désactivées, le point de réapparition se crée tout seul, les addons sont détectés automatiquement.
+De plus, les éditeurs oublient souvent quelques petits détails, comme celui de paramétrer les fractions ou encore de désactiver les IA des slots. Ce Framwork de paramètre a votre place.
 
-> **Tu débutes ?** Suis les 3 étapes ci-dessous, dans l'ordre. Compte 15 minutes. Tu n'as rien d'autre à lire.
+hds-ops fonctionne en synergie avec les sous projet ci-dessous appelé **modules**
 
----
+### hds-tactique
+> Ce module regroupe plusieurs fonctions ayant pour but de commander les troupes d'IA. il déclenche des évènements comment une demande de renfort terrestre ou encore un appui aérien si la faction le permet.
 
-## Avant de commencer
+### hds-missions
+> Ce module regroupe plusieurs fonctions ayant pour but de gérer la création de mission automatique. en utilisant les autres modules pour le faire, il peux créer une missions de toutes pièce sans avoir besoin d'éditer votre mission.
 
-Il te faut :
+### hds-occupations
+> Ce module regroupe plusieurs fonctions ayant pour but de générer de l'occupation sur zone. Cela va du civil au personnel dangereux. Il travail en synergie avec les autres modules afin d'affiner ses performance et ses possibilités.
 
-- **Arma 3** avec les mods **ACE3** et **CBA_A3**
-- **une mission** : un dossier qui contient un `mission.sqm`, sur la carte de ton choix
-- *(facultatif)* **RHS** ou **Project OPFOR**, pour avoir plus de factions ennemies
+### hds-scenario
+> Ce module regroupe plusieurs fonctions ayant pour but de vous permettre de créer un scénario très détaillés. il possible aussi l'un des fichiers les plus important. init-scenario.sqf qui sera littéralement votre feuille d'instruction pour créer lé déroulement de votre scénario ou et opération.
 
----
+***
 
-## 1. Installer
+# Où commencer ?
 
-**a. Copie les fichiers.**
-Sur la page du dépôt, clique sur **Code**, puis **Download ZIP**. Copie tout le contenu dans le dossier de ta mission, là où se trouve `mission.sqm`.
+> Par l'installation !
 
-<details>
-<summary>Ma mission avait déjà des fichiers du même nom (initserver.sqf, description.ext…)</summary>
+Afin d'installer le script, vous devez déposer le contenu du dossier **hds-ops** à la racine du dossier de votre mission. Les mods **ACE3** et **CBA_A3** sont nécessaires. Voilà le script est prêt à interagir avec votre mission.
 
-N'écrase pas les tiens. Ouvre-les et ajoute-y ces lignes.
+# Interagir comment ?
 
-**`initserver.sqf`**
+> En modifiant les paramètres et en adaptant de description à votre scénario.
+
+**hds-ops** doit être avant toute chose configuré selon la mission que vous préparez.
+Cela se fera via le fichier **mes-parametres.sqf** qui se situe à la racine du dossier de votre mission.
+Voici comment se présente le fichier et ce qui vous concerne.
+
+### Le paramétrages de base
 
 ```sqf
-#include "mes-parametres.sqf"
-#include "virtualgarage\virtualgarage.sqf"
-#include "hdssystem\init-serveur.sqf"
-#include "hdssystem\modules\occupations\h-init.sqf"
-#include "hdssystem\modules\tactiques\h-init.sqf"
-#include "hdssystem\modules\missions\h-init.sqf"
-#include "hdssystem\modules\scenario\h-init.sqf"
-#include "hdssystem\init-scenario.sqf"
+//Mes outils
+hdsversion = "hdss-ops.alpha";   //Version du hds-systeme-opsn
+hdsnombase = ["hdss-ros-base"];  //Nom du marqueur posé sur votre base (indispensable pour les missions d'otages)
+hdssysteme = false;              //Mode debuggé activé
+//Tous mes objets scriptés
+lelieuestunvehicule = false;     //Le lieu médical est un véhicule ? sinon c'est un lieu
+sontdeslieudesoin = [soins];    //Liste des objets qui sont des lieux de soins
+sontdesarsenales = [];          //Liste des objets qui sont des arsenales
+sontdespostesdecommunications = []; //liste des objets qui sont des terminal de communications (Il met à disposition des ressources pour les joueurs)
+estungarage = [ordinateur,[3018.75,5884.02,0]];//objet pouvant faire aussi de terminal de garage ainsi que la position de spawn des véhicules achetés
+//Tous les slots
+sontdesmanageurs = ["chef_one","chef_two"];
+sontdesexpertcoms = ["communication_one","communication_two"];
+sontdesmedecins = ["medecin_one","medecin_two"];
+sontdesingenieurs = ["mecano_one","mecano_two"];
+sontdespilotes = ["pilote_one","pilote_two"];
+sontdescontractor = ["contractor_1","contractor_2","contractor_3","contractor_4"];
+//Tous les appuis
+sontdesappuismanageurs = [Demandeur_appui];
+sontdesappuisexpertcoms = [Demandeur_appui];
+sontdesappuismedicals = [];
+sontdesappuisingenieurs = [];
+sontdesappuispilotes = [];
+sontdesappuiscontractor = [];
+
+```
+#### Outils
+
+hdsversion : version du scénario (optionnel).
+hdsnombase : nom du marqueur que vous posez sur votre base dans l'éditeur. Les missions d'otages en ont besoin : l'otage doit être ramené à moins de 100 m de ce marqueur.
+hdssysteme : vrai ou faux pour faire la chasse aux bugs.
+
+#### Objets scripté
+
+Les slots sont automatiquement configurés par le script. En effet, les hds vont paramétrer les slots selon leurs affectations. Cela permettra d'appeler des appuis si nécessaire et paramétré.
+
+
+1. sontdesmanageurs : Tous les slots de chefs
+2. sontdesexpertcoms : Tous les slots d'opérateur radio. Ils pourront avoir des options supplémentaires d'appel de renfort.
+3. sontdesmedecins : Tous les slots de médecin.
+4. sontdesingenieurs : tous les slots de mécanicien. Ils pourront réparer des véhicules.
+5. sontdespilotes : Tous les pilotes. Les pilotes sont généralement livrés à eux même. Afin de rendre les pilotes indépendants. Les pilotes peuvent générer de l'équipage dans leur véhicules. Si le garage virtuel est activé alors vous n'entendrez plus parler de lui durant vos missions immersives.
+6. sontdescontractor : Les contracteurs peuvent appeler des renforts terrestres et sont reliés à l'appui que vous aurez installé.
+
+#### Affectation des appuis.
+
+Par défaut, il n'y a que les managers et les opérateurs radio qui peuvent solliciter de l'appui. Mais comme indiqué ci-dessous, tout le monde peut avoir l'option.
+
+```sqf
+sontdesappuismanageurs = [radio_appui];
+sontdesappuisexpertcoms = [radio_appui];
+sontdesappuismedicals = [radio_appui];
+sontdesappuisingenieurs = [radio_appui];
+sontdesappuispilotes = [radio_appui];
+sontdesappuiscontractor = [radio_appui];
 ```
 
-**`initplayerlocal.sqf`**
+### Les paramètre de la description du scénario.
+
+> Vous pouvez aussi modifié le fichier description.ext selon vos désirs.
 
 ```sqf
-#include "mes-parametres.sqf"
-#include "hdssystem\init-client.sqf"
-#include "hdssystem\modules\occupations\h-init.sqf"
+author="Hidden's";
+OnLoadName = "Hidden's|hds";
+
+RespawnOnStart = 0;
+respawnDelay = 5;
+respawnVehicleDelay = 5;
+disabledAI = 1;
+respawnDialog = 1;
+respawn = 3;
+ticketWEST = 10;
 ```
 
-**`onplayerrespawn.sqf`**
+## Maintenant, où doit-je écrire mon scénario ?
+
+> dans le fichier init-scenario.sqf qui se trouve dans hdssystem\init-scenario.sqf
+
+Ce fichier est votre journal de bord. C'est lui qui déroulera votre mission.
+2 exemples de missions. Un scénario de soirée et une mission public à laisser tourner en semaine.
+C'est le seul autre fichier dans lequel vous devriez écrire
+
+**Exemple d'une mission publique.**
+
+Dans ce scénario, 5 missions différentes avec des factions aléatoires selon les modes activés sur le serveur seront proposées aux joueurs. Les civils sont présents sur le secteur et peuvent circuler sur les routes. fnc_scenario_init est à configurer ainsi par défaut inutile de la changer.
 
 ```sqf
-#include "hdssystem\init-reapparition.sqf"
+//initialisation du contexte de mission
+[0,0,10] call fnc_scenario_init; //[nombre_tache_scenario,prix_renumeration,pointdevehicule] call fnc_scenario_init;
+[3,west] call fnc_renfort_init;  //[nombre_appel_renfort,camps_des_renforts] call fnc_renfort_init
+[] spawn fnc_engima_traffic;     //traffic routier civil
+
+//[<entier>:rayon,<entier>:faction,<entier>:nombremissions,<entier>:difficulté,<tableau>:typelocalisation,<booleen>:civil,<booleen>:factionaléatoire,<entier>:nombredetâches] spawn fnc_hds_missions;
+
+[150,1,5,1,["NameVillage","NameLocal"],true,true,1] spawn fnc_hds_missions;
+
 ```
+**Exemple d'un scénario privé.**
 
-**`description.ext`** : copie dedans les blocs `#include "gcam\gcam_component.hpp"`, `CfgFunctions` et `CfgCommunicationMenu` du fichier `description.ext` du dépôt.
+Dans cette mission scénarisée, 3 appels de renfort alliés sont possibles et il y a du trafic civil.
+L'objectif est de récupérer 2 otages. Quand ils seront récupérés, l'ennemi attaquera votre base.
 
-</details>
-
-**b. Prépare ta mission dans l'éditeur.** Trois choses, deux minutes :
-
-1. Mets tes slots joueurs dans le camp **BLUFOR**.
-2. Pose un **marqueur** sur ta base et appelle-le `hds-ros-base`.
-3. *(facultatif)* Donne un nom aux joueurs et aux objets que le script doit configurer. Double-clique dessus et remplis le champ *Nom de variable*. Par exemple `chef_one` pour un chef d'équipe, ou `arsenal_console` pour une caisse d'arsenal.
-
----
-
-## 2. Dire au script qui est qui
-
-Ouvre le fichier `mes-parametres.sqf`, à la racine de ta mission. Cherche ce bloc et remplace les noms par ceux que tu as donnés dans l'éditeur :
+La zone sera occupée par des ennemis et le commandant IA planifiera entre 3 et 5 opérations sur une zone de 500 à mettre autour de la mission si c'est une de ses troupes vous décèle. La faction est rebelle.
 
 ```sqf
-hdsnombase = ["hds-ros-base"];                 // le marqueur de ta base
+//initialisation du contexte de mission
+[0,0,10] call fnc_scenario_init; //[nombre_tache_scenario,prix_renumeration,pointdevehicule] call fnc_scenario_init;
+[3,west] call fnc_renfort_init;  //[nombre_appel_renfort,camps_des_renforts] call fnc_renfort_init
+[] spawn fnc_engima_traffic;     //traffic routier civil
 
-sontdesarsenales  = [arsenal_console];         // tes caisses d'arsenal
-sontdeslieudesoin = [soins];                   // tes lieux de soins
+//-----------------Objectifs et déroulement----------------------
+//le hds-tactique surveille la zone et peut créer des évènements inconnu
+[[4506.92,5729.59,0],500,6,3,5] spawn fnc_tactique_plannification;
+//le hds_occupation génère des ennemi dans la zone
+[[4506.92,5729.59,0],1,6,500,false] spawn fnc_hds_occupations;
+//Une mission d'extraction de pilote est générée
+[[4506.92,5729.59,0],[4847.85,4598.72,0],[otage_0,otage_1],"pilotes de l'IDAP","Trouver et libérer les pilotes de l'IDAP",50,false] spawn fnc_scenario_otage;
 
-sontdesmanageurs  = ["chef_one","chef_two"];   // les chefs d'équipe
-sontdesexpertcoms = ["communication_one"];     // les opérateurs radio
-sontdesmedecins   = ["medecin_one"];           // les médecins
-sontdesingenieurs = ["mecano_one"];            // les mécaniciens
-sontdespilotes    = ["pilote_one"];            // les pilotes
-sontdescontractor = ["contractor_1"];          // les mercenaires
-```
-
-> **Une seule règle à retenir.**
-> Un **joueur** s'écrit **entre guillemets** : `"chef_one"`.
-> Un **objet** s'écrit **sans guillemets** : `arsenal_console`.
-
-Le reste du fichier, laisse-le tel quel. Chaque joueur reçoit tout seul ce qui va avec son rôle (un médecin soigne, un pilote crée son équipage…). Le détail est dans [Options avancées](Options-avancees#les-slots-joueurs).
-
----
-
-## 3. Lancer ta mission
-
-Bonne nouvelle : **tu n'as rien à écrire pour une première partie.**
-
-Le fichier `hdssystem\init-scenario.sqf` contient déjà une mission qui marche. Elle enchaîne 5 missions automatiques, avec des ennemis, des civils et des objectifs tirés au hasard.
-
-Lance ta mission comme d'habitude (aperçu multijoueur de l'éditeur, ou ton serveur). C'est tout.
-
-### Changer la mission automatique
-
-Tu veux plus de missions, plus difficiles, ou d'autres types de lieux ? Tout se règle sur une seule ligne.
-
-<details>
-<summary>Voir les réglages, chiffre par chiffre</summary>
-
-Dans `init-scenario.sqf`, repère la ligne `fnc_hds_missions`. Chaque chiffre a un rôle :
-
-```sqf
-[ 500,    // taille de chaque mission, en mètres
-  6,      // l'ennemi (sans effet ici, car "ennemi au hasard" est à true plus bas)
-  5,      // nombre de missions à la suite
-  3,      // difficulté : plus le chiffre est grand, plus c'est dur
-  ["NameVillage","NameCity","NameLocal","Name"],   // où ça se passe
-  true,   // des civils sont présents
-  true,   // l'ennemi est tiré au hasard
-  3       // nombre d'objectifs dans chaque mission
-] spawn fnc_hds_missions;
-```
-
-- **Les lieux possibles :** `"NameVillage"` village, `"NameCity"` ville, `"NameLocal"` endroit particulier, `"Name"` endroit commun, `"Strategic"` base militaire.
-- **Pour choisir l'ennemi toi-même :** mets `false` à l'avant-dernière ligne, et le numéro de la faction à la 2e ligne. Les numéros sont dans [Factions](Factions).
-
-</details>
-
-### Écrire ta propre histoire
-
-Tu préfères une mission écrite à la main, étape par étape ?
-
-<details>
-<summary>Voir un exemple : libérer 2 otages, puis l'ennemi contre-attaque</summary>
-
-Supprime la ligne `fnc_hds_missions` et écris tes étapes à la place. Garde les lignes du haut du fichier. Pose d'abord 2 otages dans l'éditeur et appelle-les `otage_0` et `otage_1`.
-
-```sqf
-// 1. Les ennemis surveillent la zone : de 3 à 5 surprises
-[[4506.92,5729.59,0], 500, 6, 3, 5] spawn fnc_tactique_plannification;
-
-// 2. La zone est occupée par des ennemis
-[[4506.92,5729.59,0], 1, 6, 500, false] spawn fnc_hds_occupations;
-
-// 3. La mission : libérer les otages
-[
-  [4506.92,5729.59,0],                         // où se passe la mission
-  [4847.85,4598.72,0],                         // où ramener les otages
-  [otage_0,otage_1],                           // les otages de l'éditeur
-  "Pilotes de l'IDAP",                         // leur nom
-  "Trouver et libérer les pilotes de l'IDAP",  // la consigne affichée
-  50,                                          // taille de la zone
-  false                                        // zone cachée sur la carte
-] spawn fnc_scenario_otage;
-
-// 4. On attend que la mission soit terminée
+//Attendre qu'une mission soit faite
 waituntil {tache_scenario > 0};
 
-// 5. L'ennemi contre-attaque (mets les coordonnées de ta base)
-[[4502.1,5681.85,0], 2, 5, 700, 6, false] spawn fnc_tactique_contreattaque;
+//une contre attaque ennemi est donnée au coordonnée indiquée
+[[4502.1,5681.85,0],2,5,700,6,false] spawn fnc_tactique_contreattaque;
+
 ```
 
-- Les coordonnées `[x,y,z]` se relèvent dans l'éditeur.
-- Le `6` est la faction : la milice afghane, qui demande le mod Project OPFOR. Sans lui, tu auras du CSAT. Les autres numéros sont dans [Factions](Factions).
-- `tache_scenario` compte les missions terminées. Avec une seule mission, écris `> 0` : un `> 1` n'arriverait jamais.
-
-</details>
-
----
-
-## Ça ne marche pas ?
-
-1. Dans `mes-parametres.sqf`, passe `hdssysteme = true;`. Le script annonce alors chaque étape dans le chat.
-2. Regarde la page [Dépannage](Depannage).
-
----
-
-## Pour aller plus loin
-
-Tu n'as pas besoin de ces pages pour commencer.
-
-| Page | Quand la lire |
-|---|---|
-| [Options avancées](Options-avancees) | Tu veux régler les rôles, la boutique, les appuis |
-| [Référence des fonctions](Reference-des-fonctions) | Tu veux écrire un scénario plus poussé |
-| [Factions](Factions) | Tu veux choisir l'ennemi |
-| [Dépannage](Depannage) | Quelque chose ne marche pas |
-| [Architecture](Architecture) | Tu veux modifier le script lui-même |
-
-*Au cœur du script, 4 modules travaillent ensemble : **hds-occupations** (peuple une zone), **hds-tactiques** (commande les troupes IA), **hds-missions** (crée les missions automatiques) et **hds-scenario** (tes missions écrites à la main).*
+> des exemples simples. cela vous permettra de vous concentrer sur l'ambiance de votre mission et non sa mécanique et son déroulement.
+Si vous souhaitez plus d'informations, il est possible de poser vos questions

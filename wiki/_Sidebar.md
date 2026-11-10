@@ -1,14 +1,11 @@
 **hds-ops**
 
-- [Accueil : les 3 étapes](Home)
+- [Accueil](Home)
 
-**Aller plus loin**
+**Pour aller plus loin (facultatif)**
 
 - [Options avancées](Options-avancees)
 - [Référence des fonctions](Reference-des-fonctions)
 - [Factions](Factions)
-
-**Besoin d'aide**
-
 - [Dépannage](Depannage)
 - [Architecture (développeurs)](Architecture)
