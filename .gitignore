@@ -1,0 +1,22 @@
+# ─── Journaux ───
+# Extraits du RPT par outils\extraire-log.ps1 : produits, pas sources.
+logs/
+*.rpt
+
+# ─── Réglages locaux de Claude Code ───
+# Chemins absolus propres à cette machine.
+.claude/settings.local.json
+
+# ─── Bridge Python ───
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ─── Windows ───
+Thumbs.db
+desktop.ini
+
+# ─── Mission empaquetée ───
+# Produite par l'éditeur, reconstruite à la demande.
+*.pbo

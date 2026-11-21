@@ -15,13 +15,17 @@
   exemple :
 
   [[4113.82,3864.39,0],
-    (configfile >> "CfgGroups" >> "East" >> "LOP_BH" >> "Infantry" >> "LOP_BH_WeaponSquad"),
+    ([east, "ASSAUT"] call hds_fnc_factionGroupe),
     250,
     east,
     2,
-    hds_liste_vehicule_csat,
+    ([east, "PATROUILLE"] call hds_fnc_factionVehicules),
     1
     ] spawn fnc_tactique_groupedecombat;
+
+  L'exemple d'origine citait un chemin CfgGroups ecrit a la main et le
+  tableau hds_liste_vehicule_csat, qui n'existent plus : les
+  compositions viennent du registre de factions.
 
   retourne : true (quand tous les odres ont été donnée)
 */

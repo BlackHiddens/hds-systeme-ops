@@ -6,7 +6,7 @@ _rnum = str(round (random 999));
 //--------------------------Création de marqueur----------------------------------
 _marqueurzonedecombat = [(_this select 0),(_this select 2),"colorOPFOR"] call fnc_objectif_creermarqueur;
 _marqueurzonedecombat setMarkerAlpha var_mission_transparance_marqueur;
-if(hdssysteme)then{_marqueurzonedecombat setMarkerAlpha 1};
+[_marqueurzonedecombat, var_mission_transparance_marqueur] call hds_fnc_debugMarqueur;
 
 //--------------------------------------------------------------------------------
 
@@ -25,11 +25,11 @@ _tache = "TacheCapturer" + _rnum;
 _tachetitre = (_this select 1);
 _tacheDesc = "Capturer et sécuriser la zone";
 
-if(hdssysteme)then{
-  [true,[_tache],[_tacheDesc,_tachetitre],(_marqueurzonedecombat call BIS_fnc_randomPosTrigger),0,2,true,"attack"] call BIS_fnc_taskCreate;
-}else{
-  [true,[_tache],[_tacheDesc,_tachetitre],objnull,0,2,true,"attack"] call BIS_fnc_taskCreate;
-};
+// La tache est creee sans destination : c'est hds_fnc_debugTache
+// qui pose le repere quand le mode debug est allume, et qui le
+// retire dans la seconde s'il est decoche.
+[true,[_tache],[_tacheDesc,_tachetitre],objnull,0,2,true,"attack"] call BIS_fnc_taskCreate;
+[_tache, (_marqueurzonedecombat call BIS_fnc_randomPosTrigger)] call hds_fnc_debugTache;
 //----------------------------------------------------------------------------------
 
 waitUntil {Triggeractivated _Declencheur};

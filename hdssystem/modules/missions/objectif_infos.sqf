@@ -8,8 +8,8 @@ _marqueurdemission = [((_marqueurzonedecombat call bis_fnc_randomPosTrigger)),(_
 _marqueurzonedecombat setMarkerAlpha 0;
 _marqueurdemission setMarkerAlpha var_mission_transparance_marqueur;
 
-if(hdssysteme)then{_marqueurzonedecombat setMarkerAlpha 1};
-if(hdssysteme)then{_marqueurdemission setMarkerAlpha 1};
+[_marqueurzonedecombat, 0] call hds_fnc_debugMarqueur;
+[_marqueurdemission, var_mission_transparance_marqueur] call hds_fnc_debugMarqueur;
 
 _infosTable = ["Land_Suitcase_F","Land_PlasticCase_01_large_F","Land_PlasticCase_01_medium_F","Land_PlasticCase_01_small_F","Land_MetalCase_01_large_F","Land_MetalCase_01_medium_F","Land_MetalCase_01_small_F","Land_PCSet_01_case_F"];
 _infosselectionner = selectRandom _infosTAble;
@@ -56,11 +56,11 @@ _tache = "Tache_infos" + _rnum;
 _tachetitre = (_this select 1);
 _tacheDesc = format ["Rechercher la %1 dans la zone d'opération",_veh_nom];
 
-if(hdssysteme)then{
-  [true,[_tache],[_tacheDesc,_tachetitre],(_marqueurzonedecombat call BIS_fnc_randomPosTrigger),0,2,true,"intel"] call BIS_fnc_taskCreate;
-}else{
-  [true,[_tache],[_tacheDesc,_tachetitre],objnull,0,2,true,"intel"] call BIS_fnc_taskCreate;
-};
+// La tache est creee sans destination : c'est hds_fnc_debugTache
+// qui pose le repere quand le mode debug est allume, et qui le
+// retire dans la seconde s'il est decoche.
+[true,[_tache],[_tacheDesc,_tachetitre],objnull,0,2,true,"intel"] call BIS_fnc_taskCreate;
+[_tache, (_marqueurzonedecombat call BIS_fnc_randomPosTrigger)] call hds_fnc_debugTache;
 //création de l'add action pour récuperer les documents
 _Icone = "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_hack_ca.paa";
 [_intelobj,"Récupérer",_Icone,_Icone,"_this distance _target < 2","_this distance _target < 2",{},{},

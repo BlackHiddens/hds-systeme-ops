@@ -1,97 +1,59 @@
-params ["_position","_distanceapproche","_camps"];
-if(hdssysteme)then{[format["%1 : Déploiement de renfort d'infanterie véhiculé par voie aérienne si possible",hdstactiqueversion]] remoteexeccall ['systemChat',0]};
-switch (_this select 2) do {
-  //opfor east
-    case 0: {
-      [
-        (_this select 0),
-        (configfile >> "CfgGroups" >> "East" >> "OPF_F" >> "UInfantry" >> "OIA_GuardTeam"),
-        (_this select 1),
-        east,
-        "O_Heli_Light_02_dynamicLoadout_F",
-        2
-        ] spawn fnc_tactique_renfortvehiculer;
-    };
-  case 1:{
-    //independant
-    [
-      (_this select 0),
-      (configfile >> "CfgGroups" >> "Indep" >> "IND_F" >> "Infantry" >> "I_InfTeam_Light"),
-      (_this select 1),
-      independent,
-      "I_Heli_Transport_02_F",
-      2
-      ] spawn fnc_tactique_renfortvehiculer;
-  };
- case 2:{
-   [
-     (_this select 0),
-     (configfile >> "CfgGroups" >> "West" >> "BLU_F" >> "Infantry" >> "BUS_InfAssault"),
-     (_this select 1),
-     west,
-     "B_Heli_Transport_03_F",
-     2
-     ] spawn fnc_tactique_renfortvehiculer;
- };
- case 3:{
-   [
-     (_this select 0),
-     (configfile >> "CfgGroups" >> "East" >> "OPF_G_F" >> "Infantry" >> "O_G_InfSquad_Assault"),
-     (_this select 1),
-     east,
-     "I_Heli_light_03_unarmed_F",
-     2
-     ] spawn fnc_tactique_renfortvehiculer;
- };
- case 4:{
-   [
-     (_this select 0),
-     (configfile >> "CfgGroups" >> "East" >> "LOP_BH" >> "Infantry" >> "LOP_BH_Fireteam"),
-     (_this select 1),
-     east,
-     "LOP_BH_Truck",
-     2
-     ] spawn fnc_tactique_renfortvehiculer;
- };
-  case 5:{
-    [
-      (_this select 0),
-      (configfile >> "CfgGroups" >> "East" >> "rhs_faction_msv" >> "rhs_group_rus_msv_infantry_emr" >> "rhs_group_rus_msv_infantry_emr_fireteam"),
-      (_this select 1),
-      east,
-      "RHS_Mi8mt_vdv",
-      2
-      ] spawn fnc_tactique_renfortvehiculer;
-  };
+/*
+ * fnc_tactique_insertion
+ * ─────────────────────────────────────────────────────────────
+ * Fait arriver un groupe d'infanterie sur une position, par les airs
+ * si la faction dispose d'un hélicoptère, par la route sinon.
+ *
+ * 0 : <ARRAY|STRING>        position, ou nom de marqueur
+ * 1 : <NUMBER>              distance d'approche (m)
+ * 2 : <NUMBER|STRING|SIDE>  faction
+ *
+ * L'ancienne version promettait « par voie aérienne si possible »
+ * mais le choix était figé par faction : trois d'entre elles
+ * arrivaient en camion quoi qu'il arrive, et une quatrième empruntait
+ * un hélico d'un autre camp. Ici le repli est explicite et tracé.
+ *
+ * À lancer avec spawn :
+ *   [_pos, 800, east] spawn fnc_tactique_insertion;
+ */
 
-  case 6:{
-    [
-      (_this select 0),
-      (configfile >> "CfgGroups" >> "East" >> "LOP_AM_OPF" >> "Infantry" >> "LOP_AM_OPF_Fireteam"),
-      (_this select 1),
-      east,
-      "LOP_AM_OPF_Truck",
-      2
-      ] spawn fnc_tactique_renfortvehiculer;
-  };
-  case 7:{
-    [
-      (_this select 0),
-      (configfile >> "CfgGroups" >> "East" >> "LOP_ISTS_OPF" >> "Infantry" >> "PO_ISTS_OPF_inf_WEAP_SEC"),
-      (_this select 1),
-      east,
-      "LOP_ISTS_OPF_Landrover",
-      2
-      ] spawn fnc_tactique_renfortvehiculer;
-  };
- default {
-   [
-     (_this select 0),
-     (configfile >> "CfgGroups" >> "East" >> "OPF_G_F" >> "Infantry" >> "O_G_InfSquad_Assault"),
-     (_this select 1),
-     east,
-     "O_G_Van_02_transport_F",
-     2
-     ] spawn fnc_tactique_renfortvehiculer;
- };
+params [["_position", [0,0,0]], ["_distanceapproche", 800], ["_camps", east]];
+
+if (hdssysteme) then {
+    [format ["%1 : Déploiement de renfort d'infanterie, par voie aérienne si possible", hdstactiqueversion]]
+        remoteExecCall ["systemChat", 0];
 };
+
+if (!hds_factions_pret) then {
+    if (canSuspend) then { waitUntil { hds_factions_pret } };
+};
+
+([_camps] call hds_fnc_factionResoudre) params ["_id", "_side"];
+
+private _groupe = [_id, "PATROUILLE"] call hds_fnc_factionGroupe;
+
+if (isNull _groupe) exitWith {
+    diag_log format ["[HDS][TACTIQUES] Insertion impossible pour %1 : aucun groupe", _id];
+};
+
+// ─── Hélicoptère de transport d'abord, route en repli ───
+private _vehic = [_id, "HELICO"] call hds_fnc_factionVehicule;
+private _voie  = "aerienne";
+
+if (_vehic isEqualTo "") then {
+    _vehic = [_id, "TRANSPORT"] call hds_fnc_factionVehicule;
+    _voie  = "terrestre";
+};
+
+if (_vehic isEqualTo "") exitWith {
+    diag_log format ["[HDS][TACTIQUES] Insertion impossible pour %1 : aucun vehicule", _id];
+};
+
+if (hdssysteme) then {
+    diag_log format [
+        "[HDS][TACTIQUES] Insertion %1 [%2] par voie %3 — %4 dans %5",
+        _id, _side, _voie, configName _groupe, _vehic
+    ];
+};
+
+[_position, _groupe, _distanceapproche, _side, _vehic, 2] spawn fnc_tactique_renfortvehiculer;

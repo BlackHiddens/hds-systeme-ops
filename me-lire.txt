@@ -1,24 +1,70 @@
-Bienvenue dans ai_hds_systeme, l'aide au développement de missions
+HDS — système d'opérations pour Arma 3
+Mission principale : NewHDS.Stratis
 
-Liste de ce que fait le script
---Comportement automatique
----Désactive les IA à la connexion
----Force la première réapparition sans prendre en compte les marqueurs de réapparition
----Crée un respawn automatiquement en calculant la meilleure position pour cela
----Crée un marqueur BLUFOR sur la première zone d'apparition
----Détecte et active les addons potentiellement utilisables par le script
+Ce dépôt contenait la version « ai_hds_systeme ». Elle est remplacée par
+la réécriture ci-dessous, qui devient le projet principal. L'ancienne
+version reste dans l'historique git.
 
---Comportement activable
----Établit une liste d'objets soignants automatiquement
----Établit une liste d'objets servant d'arsenal complet
----Choisit si le lieu médical est un objet ou un véhicule (détails)
 
-Liste des variables
----sontdesarsenales <tableau>
----sontdespostesdecommunications <tableau>
----sontdeslieuxdesoin <tableau>
----sontdesmanageurs <tableau>
----sontdesexpertcoms <tableau>
----sontdesingenieurs <tableau>
----sontdespilotes <tableau>
----sontdescontractor <tableau>
+PRÉREQUIS
+---------
+CBA_A3, et rien d'autre. ACE3 n'est plus une dépendance : tout ce qui
+en dépendait a été réécrit en vanilla. Les autres mods (RHS, CUP…) sont
+détectés à chaud — le registre de factions s'adapte à ce qui est chargé.
+
+
+COMMENT ÇA DÉMARRE
+------------------
+  initserver.sqf        → hdssystem\init-systeme.sqf   (serveur)
+  initplayerlocal.sqf                                  (client)
+  mes-parametres.sqf    → journal, compatibilité, réglages CBA
+
+init-systeme.sqf charge les cinq modules, puis lance
+hdssystem\init-scenario.sqf — le seul fichier à remplacer pour écrire
+une mission. Il est volontairement presque vide : le système vit
+ailleurs, et on peut y coller du code généré sans rien casser.
+
+
+LES MODULES
+-----------
+  factions     registre construit à chaud depuis CfgGroups, CfgVehicles
+               et CfgFactionClasses. Donne groupes, véhicules et hommes
+               d'une faction par intention (GARNISON, PATROUILLE…),
+               avec repli garanti si un mod manque.
+  occupations  peuple un secteur : garnisons dans les bâtiments,
+               patrouilles à pied, patrouilles en véhicule sur routes,
+               tours de guet obligatoirement tenues, population civile.
+  missions     les objectifs (otage, HVT, piratage, cache d'armes…).
+  tactiques    réactions des groupes au contact.
+  scenario     l'enchaînement d'une partie.
+  journal      hds_fnc_log : traces filtrables dans le RPT et tampon
+               copiable en jeu, pour coller un rapport au lieu de le
+               décrire. Voir outils\extraire-log.ps1.
+
+
+RÉGLAGES EN JEU
+---------------
+Échap → Options → Options des addons → catégorie HDS :
+mode debug, niveau du journal, scan des factions, faction forcée,
+population civile. Tout prend effet immédiatement.
+
+Le mode debug vaut « AUTO » par défaut : allumé quand tu héberges la
+mission toi-même, éteint sur un serveur dédié. Rien à désactiver avant
+une mise en ligne.
+
+
+OUTILS ADMIN
+------------
+Échap → « HDS — Outils admin » : copie du journal, des erreurs, et du
+registre de factions en JSON. Réservé aux UID listés dans
+hds_administrateurs.
+
+
+CE QUI N'EST PLUS LÀ
+--------------------
+  archive\commandant-ia.zip   tentative de laisser une IA piloter la
+                              stratégie des forces ennemies, via un
+                              pont Python vers l'API Claude. Le résultat
+                              n'était pas concluant : abandonné.
+  hdssystem\_archive\         code mis de côté lors du nettoyage, gardé
+                              le temps de vérifier qu'il ne manque rien.
