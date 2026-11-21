@@ -8,7 +8,7 @@ class EditorData
 	toggles=1;
 	class ItemIDProvider
 	{
-		nextID=18;
+		nextID=26;
 	};
 	class MarkerIDProvider
 	{
@@ -16,10 +16,10 @@ class EditorData
 	};
 	class Camera
 	{
-		pos[]={3275.4373,237.7457,2926.5237};
-		dir[]={0.80005538,-0.45255691,0.39383206};
-		up[]={0.40602916,0.89173561,0.19987029};
-		aside[]={0.44164675,0,-0.89718914};
+		pos[]={3286.6616,62.743969,5744.1147};
+		dir[]={-0.13891444,-0.48249507,0.8648138};
+		up[]={-0.076521978,0.87589866,0.47638878};
+		aside[]={0.98734415,-8.7020453e-09,0.15859638};
 	};
 };
 binarizationWanted=0;
@@ -30,13 +30,14 @@ addons[]=
 	"A3_Weapons_F_Ammoboxes",
 	"A3_Structures_F_Items_Electronics",
 	"A3_Structures_F_Civ_InfoBoards",
-	"A3_Ui_F"
+	"A3_Ui_F",
+	"A3_Soft_F_Exp_LSV_01"
 };
 class AddonsMetaData
 {
 	class List
 	{
-		items=4;
+		items=5;
 		class Item0
 		{
 			className="A3_Characters_F";
@@ -65,7 +66,18 @@ class AddonsMetaData
 			author="Bohemia Interactive";
 			url="https://www.arma3.com";
 		};
+		class Item4
+		{
+			className="A3_Soft_F_Exp";
+			name="Arma 3 Apex - Unarmored Land Vehicles";
+			author="Bohemia Interactive";
+			url="https://www.arma3.com";
+		};
 	};
+};
+dlcs[]=
+{
+	"Expansion"
 };
 randomSeed=1697136;
 class ScenarioData
@@ -94,7 +106,7 @@ class Mission
 	};
 	class Entities
 	{
-		items=7;
+		items=8;
 		class Item0
 		{
 			dataType="Group";
@@ -107,7 +119,7 @@ class Mission
 					dataType="Object";
 					class PositionInfo
 					{
-						position[]={3281.9751,229.18143,2936.1101};
+						position[]={3265.7454,5.3971243,5791.0449};
 					};
 					side="West";
 					flags=7;
@@ -120,6 +132,7 @@ class Mission
 					};
 					id=3;
 					type="B_Soldier_TL_F";
+					atlOffset=-4.7683716e-07;
 					class CustomAttributes
 					{
 						class Attribute0
@@ -156,7 +169,7 @@ class Mission
 					dataType="Object";
 					class PositionInfo
 					{
-						position[]={3286.9751,229.18143,2931.1101};
+						position[]={3270.7454,5.4077072,5786.0449};
 					};
 					side="West";
 					flags=5;
@@ -170,13 +183,14 @@ class Mission
 					};
 					id=4;
 					type="B_soldier_AR_F";
+					atlOffset=-4.7683716e-07;
 				};
 				class Item2
 				{
 					dataType="Object";
 					class PositionInfo
 					{
-						position[]={3276.9751,229.19135,2931.1101};
+						position[]={3260.7454,5.4264479,5786.0449};
 					};
 					side="West";
 					flags=5;
@@ -195,7 +209,7 @@ class Mission
 					dataType="Object";
 					class PositionInfo
 					{
-						position[]={3291.9751,229.18628,2926.1101};
+						position[]={3275.7454,5.3489532,5781.0449};
 					};
 					side="West";
 					flags=5;
@@ -208,20 +222,22 @@ class Mission
 					};
 					id=6;
 					type="B_soldier_LAT_F";
+					atlOffset=-4.7683716e-07;
 				};
 			};
 			class Attributes
 			{
 			};
 			id=2;
+			atlOffset=-4.7683716e-07;
 		};
 		class Item1
 		{
 			dataType="Object";
 			class PositionInfo
 			{
-				position[]={3269.7971,230.08066,2938.9102};
-				angles[]={0.0024897563,0.5,6.2806959};
+				position[]={3253.5674,6.2248716,5793.8447};
+				angles[]={0.022495884,0.5,0.0024897563};
 			};
 			side="Empty";
 			flags=4;
@@ -238,8 +254,8 @@ class Mission
 			dataType="Object";
 			class PositionInfo
 			{
-				position[]={3271.3528,230.07745,2938.6375};
-				angles[]={0.0024897563,0.5,6.2806959};
+				position[]={3255.123,6.2348909,5793.5723};
+				angles[]={0.022495884,0.5,0.0024897563};
 			};
 			side="Empty";
 			flags=4;
@@ -250,13 +266,15 @@ class Mission
 			};
 			id=13;
 			type="B_supplyCrate_F";
+			atlOffset=-4.7683716e-07;
 		};
 		class Item3
 		{
 			dataType="Object";
 			class PositionInfo
 			{
-				position[]={3270.3596,229.47406,2933.0884};
+				position[]={3254.1299,5.7037706,5788.0229};
+				angles[]={0.012496647,0,0};
 			};
 			side="Empty";
 			flags=4;
@@ -273,7 +291,8 @@ class Mission
 			dataType="Object";
 			class PositionInfo
 			{
-				position[]={3271,229.34607,2934};
+				position[]={3254.7703,5.5643849,5788.9346};
+				angles[]={0.012496647,0,0};
 			};
 			side="Empty";
 			flags=4;
@@ -290,8 +309,8 @@ class Mission
 			dataType="Object";
 			class PositionInfo
 			{
-				position[]={3273,230.15889,2932};
-				angles[]={0,2.3,0};
+				position[]={3256.7703,6.391551,5786.9346};
+				angles[]={0.0024897563,2.3,0};
 			};
 			side="Empty";
 			flags=4;
@@ -306,13 +325,28 @@ class Mission
 		class Item6
 		{
 			dataType="Marker";
-			position[]={3280,229.2,2936};
+			position[]={3263.7703,5.4000802,5790.9346};
 			name="hds_base_marqueur";
 			text="Base NewHDS";
 			type="b_installation";
 			colorName="ColorWEST";
 			id=17;
-			atlOffset=0.020004272;
+		};
+		class Item7
+		{
+			dataType="Object";
+			class PositionInfo
+			{
+				position[]={3282.7415,7.4994054,5778.6133};
+				angles[]={0.0049914722,2.9685426,6.278194};
+			};
+			side="Empty";
+			flags=4;
+			class Attributes
+			{
+			};
+			id=25;
+			type="B_LSV_01_armed_F";
 		};
 	};
 };

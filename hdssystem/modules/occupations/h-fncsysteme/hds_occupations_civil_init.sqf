@@ -113,12 +113,53 @@ if (hdssysteme) then {
     ]] call hds_fnc_log;
 };
 
-// ─── Mise en place ───
+// ═══════════════════════════════════════════════════════════
+// MISE EN PLACE
+// ═══════════════════════════════════════════════════════════
+// ── Pourquoi plus de BIS_fnc_spawnVehicle ──
+// Elle servait à faire naître les deux civils. C'est une fonction à
+// véhicules : donnée une classe d'homme, ce qu'elle rend en troisième
+// position n'est pas un groupe exploitable. BIS_fnc_taskPatrol le
+// recevait quand même, ne faisait rien, et le piéton restait planté là
+// où il était tombé — souvent à l'intérieur d'un mur, au centre exact
+// de la zone. D'où l'impression qu'il n'y avait aucun piéton.
+//
+// createGroup + createUnit, c'est la façon d'en créer : le groupe est
+// réel, la patrouille fonctionne, et l'homme marche.
+
+// Un seul groupe pour les casaniers : ils ne bougent pas, inutile d'en
+// faire un par personne. Les piétons, eux, en ont chacun un, sans quoi
+// ils déambuleraient en formation comme une escouade.
+private _grpMaison = createGroup [civilian, true];
+
+private _fnCreer = {
+    params ["_grp", "_cls", "_pos"];
+    private _avant = units _grp;
+    _grp createUnit [_cls, _pos, [], 0, "NONE"];
+    private _neufs = (units _grp) - _avant;
+    if (_neufs isEqualTo []) then { objNull } else { _neufs select 0 }
+};
+
+// Une position au hasard dans la zone.
+private _fnQuelquePart = {
+    params ["_rayon"];
+    private _a = random 360;
+    private _d = sqrt (random 1) * _rayon;
+    [(_centre select 0) + _d * sin _a, (_centre select 1) + _d * cos _a, 0]
+};
+
+// Les routes de l'agglomération : un piéton se voit sur un trottoir,
+// pas au fond d'un jardin.
+private _routes = _centre nearRoads _taille;
+
+private _poses = 0;
+
 for "_i" from 1 to _nb do {
 
-    // Casanier : assis chez lui
-    private _casanier = [_centre, 180, selectRandom _classes, civilian] call BIS_fnc_spawnVehicle;
-    private _hommeC = _casanier select 0;
+    // ─── Casanier : assis chez lui ───
+    private _hommeC = [_grpMaison, selectRandom _classes, [_taille] call _fnQuelquePart]
+        call _fnCreer;
+
     if (!isNull _hommeC) then {
         [_centre, nil, [_hommeC], _taille, 1, false, true] call hds_fnc_garnison;
         [_hommeC, "SIT_LOW_U", "NONE"] call BIS_fnc_ambientAnim;
@@ -129,16 +170,39 @@ for "_i" from 1 to _nb do {
         // ce qui le distingue d'un otage ou d'un VIP posé par une
         // mission, qui ne doit jamais être balayé.
         _hommeC setVariable ["hds_civil_ambiance", true, true];
+        _poses = _poses + 1;
     };
 
-    // Piéton : il déambule dans le tiers central
-    private _pieton = [_centre, 180, selectRandom _classes, civilian] call BIS_fnc_spawnVehicle;
-    private _hommeP = _pieton select 0;
-    if (!isNull _hommeP) then {
-        [(_pieton select 2), _centre, (_taille / 3)] call BIS_fnc_taskPatrol;
+    // ─── Piéton : il déambule, et on le voit ───
+    private _depart = if (_routes isEqualTo []) then {
+        [_taille] call _fnQuelquePart
+    } else {
+        getPos (selectRandom _routes)
+    };
+
+    private _grpP = createGroup [civilian, true];
+    private _hommeP = [_grpP, selectRandom _classes, _depart] call _fnCreer;
+
+    if (isNull _hommeP) then {
+        deleteGroup _grpP;
+    } else {
+        _hommeP setPosATL _depart;
+
+        [_grpP, _centre, (_taille * 0.6), 4] call BIS_fnc_taskPatrol;
+        _grpP setBehaviour "CARELESS";
+        _grpP setSpeedMode "LIMITED";
+
         _hommeP enableDynamicSimulation true;
         _hommeP setVariable ["hds_civil_ambiance", true, true];
+        _poses = _poses + 1;
     };
 };
+
+["INFO", "CIVILS", format [
+    "%1 civil(s) places sur %2 voulus autour de [%3,%4] - %5 route(s) dans la zone",
+    _poses, _nb * 2,
+    round (_centre select 0), round (_centre select 1),
+    count _routes
+]] call hds_fnc_log;
 
 true

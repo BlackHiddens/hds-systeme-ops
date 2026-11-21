@@ -184,10 +184,10 @@ private _fnFacteur = {
     private _f = 1;
 
     if !((nearestLocations [_pos, ["NameCityCapital", "NameCity"], 500]) isEqualTo []) then {
-        _f = 2;
+        _f = 3;
     } else {
         if !((nearestLocations [_pos, ["NameVillage"], 400]) isEqualTo []) then {
-            _f = 1.5;
+            _f = 1.8;
         };
     };
 
@@ -287,7 +287,16 @@ while {true} do {
             private _desertee    =  [_centre, _joueurs, _taille + _distanceOubli] call _fnLoin;
 
             if (_procheAssez && { !_peuplee }) then {
-                [_centre, 0, _taille, "", false] spawn fnc_occupations_civil_init;
+
+                // Le nombre d'habitants était déduit des seules maisons,
+                // ratio codé en dur. Le facteur du lieu s'y ajoute
+                // maintenant, proportionnellement à la densité demandée :
+                // une ville est plus peuplée qu'un hameau, et le curseur
+                // du menu agit aussi sur les habitants, pas seulement sur
+                // les voitures.
+                private _plus = round (_voulu * (([_centre] call _fnFacteur) - 1) / 2);
+
+                [_centre, _plus, _taille, "", false] spawn fnc_occupations_civil_init;
 
                 // Des voitures vides garées le long des rues : c'est ce
                 // qui fait qu'une ville a l'air habitée même quand ses
@@ -329,10 +338,12 @@ while {true} do {
 
             private _manque = _cible - (count _ici);
 
-            // Trois par cycle au plus : une apparition en masse se voit,
-            // et tout créer sur la même image fait tressauter le serveur.
+            // Six par cycle au plus. C'était trois, et avec une cible
+            // triplée en ville il fallait près d'une minute pour remplir
+            // les rues — d'où un trafic urbain qui paraissait misérable
+            // alors qu'il montait seulement trop lentement.
             if (_manque > 0) then {
-                for "_i" from 1 to (_manque min 3) do {
+                for "_i" from 1 to (_manque min 6) do {
 
                 private _depart = [_equipe, _distanceMin, _distanceMax, _joueurs] call _fnRouteAutour;
 

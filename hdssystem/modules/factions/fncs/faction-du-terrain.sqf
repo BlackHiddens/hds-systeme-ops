@@ -67,7 +67,25 @@ private _comptes = createHashMap;
     if (_cls != "") then {
         private _f = getText (configFile >> "CfgVehicles" >> _cls >> "faction");
         if (_f != "" && { _f != "Default" }) then {
-            _comptes set [_f, (_comptes getOrDefault [_f, 0]) + 1];
+
+            // Le camp que rend le moteur ne suffit pas : UN VÉHICULE
+            // VIDE EST « civilian », quelle que soit son armée. Un camion
+            // OPFOR sans équipage, une épave de la mission, un véhicule
+            // posé vide dans l'éditeur — tous comptaient comme civils.
+            //
+            // Résultat : la faction « civile du terrain » devenait une
+            // faction militaire, et fnc_hds_vie_civile demandait ses
+            // véhicules légers à l'armée. D'où des civils au volant de
+            // blindés, ce qui est exactement ce qui se voyait en jeu.
+            //
+            // On confronte donc la faction déclarée de la classe au camp
+            // demandé, via le registre, au lieu de faire confiance à
+            // « side ».
+            private _reg = hds_factions get _f;
+
+            if (!isNil "_reg" && { (_reg get "sideNom") isEqualTo _sideNom }) then {
+                _comptes set [_f, (_comptes getOrDefault [_f, 0]) + 1];
+            };
         };
     };
 } forEach ((allUnits + vehicles) select { alive _x && { (side _x) isEqualTo _camp } });
