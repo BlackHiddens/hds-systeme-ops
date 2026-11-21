@@ -13,6 +13,12 @@
 [3, west] call fnc_renfort_init;
 [0, 0, 10] call fnc_scenario_init;
 
+// Vie civile : trafic sur les routes et habitants dans les
+// agglomérations, entretenus autour des joueurs et supprimés dès qu'ils
+// s'éloignent. La densité se règle ensuite en jeu, menu CBA.
+// Décocher « Population civile » dans ce menu arrête tout.
+[] spawn fnc_hds_vie_civile;
+
 // ----- Déroulé -----
 
 // Étape 1 - Occuper une zone
