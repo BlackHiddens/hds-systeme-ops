@@ -183,6 +183,9 @@ hds_fnc_circuitRoutier         = compile preprocessFile "hdssystem\fonctions\cir
 // Poste un homme dans chaque tour de guet d'un secteur.
 hds_fnc_miradors               = compile preprocessFile "hdssystem\fonctions\miradors.sqf";
 
+// Voitures civiles vides garees le long des rues d'une agglomeration.
+hds_fnc_voituresGarees         = compile preprocessFile "hdssystem\fonctions\voitures-garees.sqf";
+
 // ─── Renforts alliés : la partie CLIENT ───
 // Ces trois fonctions tournent sur le client (carte, actions, chat).
 // Elles étaient compilées dans modules\occupations\h-init.sqf, qui n'est

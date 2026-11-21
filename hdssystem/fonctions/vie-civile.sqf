@@ -148,14 +148,62 @@ private _fnSupprimer = {
     };
 };
 
-// Une position de route dans l'anneau autour d'un joueur.
+// Des joueurs éloignés les uns des autres jouent chacun de leur côté :
+// chacun doit avoir son ambiance, pas se partager un quota commun.
+// Une passe simple suffit — on n'a pas besoin d'un vrai partitionnement,
+// seulement de savoir qui est avec qui.
+private _fnGrappes = {
+    params ["_joueurs", "_rayon"];
+
+    private _grappes = [];
+
+    {
+        private _j = _x;
+        private _place = false;
+
+        {
+            if (!_place && { (_j distance2D (_x select 0)) < _rayon }) then {
+                (_x select 1) pushBack _j;
+                _place = true;
+            };
+        } forEach _grappes;
+
+        if (!_place) then { _grappes pushBack [getPosATL _j, [_j]] };
+    } forEach _joueurs;
+
+    _grappes
+};
+
+// Plus dense en ville qu'à la campagne. « Un trafic correct sur les
+// routes isolées et départementales, plus dense sur les agglomérations,
+// sans en faire trop pour les petites villes » : d'où une ville qui
+// double la densité, un village qui l'augmente de moitié seulement.
+private _fnFacteur = {
+    params ["_pos"];
+
+    private _f = 1;
+
+    if !((nearestLocations [_pos, ["NameCityCapital", "NameCity"], 500]) isEqualTo []) then {
+        _f = 2;
+    } else {
+        if !((nearestLocations [_pos, ["NameVillage"], 400]) isEqualTo []) then {
+            _f = 1.5;
+        };
+    };
+
+    _f
+};
+
+// Une position de route dans l'anneau autour d'une grappe. L'anneau se
+// mesure sur la grappe, mais la distance minimale vaut pour TOUS les
+// joueurs : rien n'apparaît sous le nez de quelqu'un d'autre.
 private _fnRouteAutour = {
-    params ["_joueurs", "_min", "_max"];
+    params ["_autour", "_min", "_max", "_tous"];
 
     private _trouve = [];
 
     for "_essai" from 1 to 12 do {
-        private _ancre = selectRandom _joueurs;
+        private _ancre = selectRandom _autour;
         private _angle = random 360;
         private _d     = _min + random (_max - _min);
 
@@ -170,8 +218,9 @@ private _fnRouteAutour = {
         if !(_routes isEqualTo []) then {
             private _r = getPos (selectRandom _routes);
             // Jamais plus près que le minimum d'un joueur, même si la
-            // route trouvée revient vers lui.
-            if ([_r, _joueurs, _min] call _fnLoin) then { _trouve = _r };
+            // route trouvée revient vers lui — et ça vaut pour tous les
+            // joueurs, pas seulement ceux de la grappe visée.
+            if ([_r, _tous, _min] call _fnLoin) then { _trouve = _r };
         };
 
         if !(_trouve isEqualTo []) exitWith {};
@@ -239,6 +288,12 @@ while {true} do {
 
             if (_procheAssez && { !_peuplee }) then {
                 [_centre, 0, _taille, "", false] spawn fnc_occupations_civil_init;
+
+                // Des voitures vides garées le long des rues : c'est ce
+                // qui fait qu'une ville a l'air habitée même quand ses
+                // habitants sont rentrés chez eux.
+                [_centre, _taille] spawn hds_fnc_voituresGarees;
+
                 _x set [2, true];
 
                 ["INFO", "CIVILS", format [
@@ -253,21 +308,33 @@ while {true} do {
 
         } forEach _lieux;
 
-        // ─── 3. COMPLÉTER LE TRAFIC ───
-        private _enRoute = (vehicles select {
-            _x getVariable ["hds_civil_ambiance", false]
-            && { alive _x }
-            && { !((crew _x) isEqualTo []) }
-        });
+        // ─── 3. COMPLÉTER LE TRAFIC, GRAPPE PAR GRAPPE ───
+        // Deux équipes qui opèrent à dix kilomètres l'une de l'autre ne
+        // se partagent pas un quota : chacune a le sien. Sinon la
+        // seconde roule sur des routes désertes pendant que la première
+        // a tout le trafic.
+        private _grappes = [_joueurs, 1200] call _fnGrappes;
 
-        private _manque = _voulu - (count _enRoute);
+        {
+            _x params ["_ancre", "_equipe"];
 
-        // Trois par cycle au plus : une apparition en masse se voit, et
-        // tout créer sur la même image fait tressauter le serveur.
-        if (_manque > 0) then {
-            for "_i" from 1 to (_manque min 3) do {
+            private _cible = round (_voulu * ([_ancre] call _fnFacteur));
 
-                private _depart = [_joueurs, _distanceMin, _distanceMax] call _fnRouteAutour;
+            private _ici = vehicles select {
+                _x getVariable ["hds_civil_ambiance", false]
+                && { alive _x }
+                && { !((crew _x) isEqualTo []) }
+                && { (_x distance2D _ancre) < _distanceOubli }
+            };
+
+            private _manque = _cible - (count _ici);
+
+            // Trois par cycle au plus : une apparition en masse se voit,
+            // et tout créer sur la même image fait tressauter le serveur.
+            if (_manque > 0) then {
+                for "_i" from 1 to (_manque min 3) do {
+
+                private _depart = [_equipe, _distanceMin, _distanceMax, _joueurs] call _fnRouteAutour;
 
                 if !(_depart isEqualTo []) then {
 
@@ -331,8 +398,10 @@ while {true} do {
                 };
 
                 sleep 0.3;
+                };
             };
-        };
+
+        } forEach _grappes;
     };
 
     sleep 8;
