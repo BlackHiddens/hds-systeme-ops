@@ -42,9 +42,10 @@
 if (!isServer) exitWith { 0 };
 
 params [
-    ["_centre", [0, 0, 0], [[]]],
-    ["_rayon",  300, [0]],
-    ["_nombre", -1, [0]]
+    ["_centre",  [0, 0, 0], [[]]],
+    ["_rayon",   300, [0]],
+    ["_nombre",  -1, [0]],
+    ["_faction", civilian]
 ];
 
 if (count _centre < 2) exitWith { 0 };
@@ -52,10 +53,13 @@ if (count _centre < 2) exitWith { 0 };
 // Déduit du rayon si on ne l'impose pas. Un hameau n'a pas besoin d'un
 // parking : « pas besoin d'en faire trop pour les petites villes ».
 if (_nombre < 0) then {
-    _nombre = (round (_rayon / 110)) max 1 min 8;
+    _nombre = (round (_rayon / 60)) max 2 min 14;
 };
 
-private _classes = [civilian, "LEGER"] call hds_fnc_factionVehicules;
+// La même population que les voitures en circulation et que les
+// habitants : une rue où les voitures garées ne sont pas du même peuple
+// que celles qui roulent, ça se remarque.
+private _classes = [_faction, "LEGER"] call hds_fnc_factionVehicules;
 
 if (_classes isEqualTo []) exitWith {
     ["ALERTE", "CIVILS", "voitures garees : aucun vehicule civil dans le registre"]
@@ -69,7 +73,7 @@ if (_classes isEqualTo []) exitWith {
 // On ne gare pas une voiture au milieu d'un champ : seulement là où
 // quelqu'un pourrait habiter.
 private _routes = (_centre nearRoads _rayon) select {
-    (count (nearestObjects [getPos _x, ["House"], 45])) > 0
+    (count (nearestObjects [getPos _x, ["House"], 60])) > 0
 };
 
 if (count _routes < 2) exitWith {
@@ -96,34 +100,43 @@ private _fnPlat = {
     private _haut = _h select 0;
     { if (_x < _bas) then { _bas = _x }; if (_x > _haut) then { _haut = _x } } forEach _h;
 
-    (_haut - _bas) < 0.8
+    (_haut - _bas) < 1.1
 };
+
+// Compteurs de refus : sans eux, « aucune voiture garée » ne dit pas
+// pourquoi, et on règle les seuils à l'aveugle.
+private _refusEau   = 0;
+private _refusObjet = 0;
+private _refusArbre = 0;
+private _refusPente = 0;
 
 private _fnLibre = {
     params ["_p"];
 
-    if (surfaceIsWater _p) exitWith { false };
-    if (isOnRoad _p) exitWith { false };
+    if (surfaceIsWater _p) exitWith { _refusEau = _refusEau + 1; false };
 
-    if !((nearestObjects [_p, ["AllVehicles", "Building", "Static"], 5]) isEqualTo []) exitWith {
+    if !((nearestObjects [_p, ["AllVehicles", "Building", "Static"], 4]) isEqualTo []) exitWith {
+        _refusObjet = _refusObjet + 1;
         false
     };
 
     private _obstacles = nearestTerrainObjects [
         _p, ["TREE", "SMALL TREE", "BUSH", "ROCK", "ROCKS", "WALL", "FENCE",
-             "HOUSE", "CHURCH", "FUELSTATION", "POWER LINES"], 4
+             "HOUSE", "CHURCH", "FUELSTATION", "POWER LINES"], 3.5
     ];
 
-    if !(_obstacles isEqualTo []) exitWith { false };
+    if !(_obstacles isEqualTo []) exitWith { _refusArbre = _refusArbre + 1; false };
 
-    [_p] call _fnPlat
+    if !([_p] call _fnPlat) exitWith { _refusPente = _refusPente + 1; false };
+
+    true
 };
 
 private _poses = 0;
 private _essais = 0;
 private _vues = [];
 
-while { _poses < _nombre && { _essais < (_nombre * 8) } } do {
+while { _poses < _nombre && { _essais < (_nombre * 25) } } do {
 
     _essais = _essais + 1;
 
@@ -132,7 +145,7 @@ while { _poses < _nombre && { _essais < (_nombre * 8) } } do {
 
     // Deux voitures collées au même tronçon, ça ne ressemble à rien.
     private _dejaVu = false;
-    { if ((_a distance2D _x) < 25) exitWith { _dejaVu = true } } forEach _vues;
+    { if ((_a distance2D _x) < 18) exitWith { _dejaVu = true } } forEach _vues;
 
     if (!_dejaVu) then {
 
@@ -217,11 +230,14 @@ while { _poses < _nombre && { _essais < (_nombre * 8) } } do {
     };
 };
 
-["INFO", "CIVILS", format [
-    "voitures garees : %1 sur %2 voulue(s) autour de [%3,%4] - %5 route(s) habitee(s)",
-    _poses, _nombre,
-    round (_centre select 0), round (_centre select 1),
-    count _routes
-]] call hds_fnc_log;
+if (_poses > 0 || { hdssysteme }) then {
+    ["INFO", "CIVILS", format [
+        "voitures garees : %1 sur %2 autour de [%3,%4] - %5 route(s) habitee(s), %6 essais - refus : eau %7, objet %8, arbre %9, pente %10",
+        _poses, _nombre,
+        round (_centre select 0), round (_centre select 1),
+        count _routes, _essais,
+        _refusEau, _refusObjet, _refusArbre, _refusPente
+    ]] call hds_fnc_log;
+};
 
 _poses

@@ -16,10 +16,10 @@ class EditorData
 	};
 	class Camera
 	{
-		pos[]={3286.6616,62.743969,5744.1147};
-		dir[]={-0.13891444,-0.48249507,0.8648138};
-		up[]={-0.076521978,0.87589866,0.47638878};
-		aside[]={0.98734415,-8.7020453e-09,0.15859638};
+		pos[]={2938.7017,62.743969,5996.9888};
+		dir[]={0.70484662,-0.28530148,-0.64947039};
+		up[]={0.20982113,0.95843261,-0.19333655};
+		aside[]={-0.67763293,7.5262506e-08,-0.73541147};
 	};
 };
 binarizationWanted=0;
@@ -183,7 +183,7 @@ class Mission
 					};
 					id=4;
 					type="B_soldier_AR_F";
-					atlOffset=-4.7683716e-07;
+					atlOffset=-4.7683716e-06;
 				};
 				class Item2
 				{
@@ -203,6 +203,7 @@ class Mission
 					};
 					id=5;
 					type="B_Soldier_GL_F";
+					atlOffset=-3.3378601e-06;
 				};
 				class Item3
 				{
@@ -222,7 +223,7 @@ class Mission
 					};
 					id=6;
 					type="B_soldier_LAT_F";
-					atlOffset=-4.7683716e-07;
+					atlOffset=-7.6293945e-06;
 				};
 			};
 			class Attributes
@@ -248,6 +249,7 @@ class Mission
 			};
 			id=12;
 			type="B_supplyCrate_F";
+			atlOffset=-0.00019073486;
 		};
 		class Item2
 		{
@@ -266,7 +268,7 @@ class Mission
 			};
 			id=13;
 			type="B_supplyCrate_F";
-			atlOffset=-4.7683716e-07;
+			atlOffset=-0.0001912117;
 		};
 		class Item3
 		{
@@ -285,6 +287,7 @@ class Mission
 			};
 			id=14;
 			type="Box_NATO_Support_F";
+			atlOffset=-1.7642975e-05;
 		};
 		class Item4
 		{
@@ -303,6 +306,7 @@ class Mission
 			};
 			id=15;
 			type="Land_Laptop_unfolded_F";
+			atlOffset=-1.7642975e-05;
 		};
 		class Item5
 		{
@@ -321,6 +325,7 @@ class Mission
 			};
 			id=16;
 			type="Land_MapBoard_F";
+			atlOffset=2.8610229e-06;
 		};
 		class Item6
 		{
@@ -347,6 +352,7 @@ class Mission
 			};
 			id=25;
 			type="B_LSV_01_armed_F";
+			atlOffset=-2.6702881e-05;
 		};
 	};
 };

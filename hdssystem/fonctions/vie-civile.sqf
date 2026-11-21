@@ -77,8 +77,26 @@ if (!canSuspend) exitWith {
 // Le registre est rempli de façon asynchrone au démarrage.
 if (!hds_factions_pret) then { waitUntil { hds_factions_pret } };
 
-private _classesVeh = [civilian, "LEGER"] call hds_fnc_factionVehicules;
-private _classesHom = [civilian] call hds_fnc_factionHommes;
+// ─── Une seule faction civile, pour tout ───
+// Les véhicules et les hommes étaient demandés séparément, et les deux
+// fonctions ne résolvent pas la faction de la même façon :
+// hds_fnc_factionVehicules passe par hds_fnc_factionResoudre, pendant
+// que hds_fnc_factionHommes se contente du camp et prend la première
+// faction civile venue. Résultat, le chauffeur et sa voiture pouvaient
+// sortir de deux populations différentes.
+//
+// On résout donc UNE fois, et on sert tout le monde avec le même id :
+// les voitures, les chauffeurs, et les habitants des agglomérations.
+([civilian] call hds_fnc_factionResoudre) params ["_idCiv", "_sideCiv"];
+
+private _classesVeh = [_idCiv, "LEGER"] call hds_fnc_factionVehicules;
+private _classesHom = [_idCiv] call hds_fnc_factionHommes;
+
+["INFO", "CIVILS", format [
+    "population civile retenue : %1 - %2 vehicule(s), %3 homme(s)",
+    (["aucune", _idCiv] select (_idCiv != "")),
+    count _classesVeh, count _classesHom
+]] call hds_fnc_log;
 
 if (_classesVeh isEqualTo [] || { _classesHom isEqualTo [] }) exitWith {
     ["ALERTE", "CIVILS", format [
@@ -229,6 +247,50 @@ private _fnRouteAutour = {
     _trouve
 };
 
+// Un itinéraire qui SUIT la route, au lieu de points tirés au hasard.
+//
+// La version précédente prenait trois routes au hasard dans un rayon de
+// 400 à 1300 m autour du départ. Rien ne garantissait qu'elles soient
+// dans le même sens : l'étape 1 pouvait être derrière, l'étape 2 devant,
+// l'étape 3 derrière à nouveau. Le véhicule passait son temps à faire
+// demi-tour — c'est ça, la conduite erratique.
+//
+// Ici on part du tronçon de départ et on avance de voisin en voisin,
+// sans jamais revenir sur celui d'où l'on vient. Tous les quatorze
+// tronçons, on pose une étape. Le trajet est continu et suit vraiment
+// le réseau, donc le véhicule a toujours sa route devant lui.
+private _fnItineraire = {
+    params ["_debut", "_nbEtapes"];
+
+    private _points = [];
+    private _routes = _debut nearRoads 30;
+
+    if (_routes isEqualTo []) exitWith { _points };
+
+    private _courant   = _routes select 0;
+    private _precedent = objNull;
+    private _pas = 0;
+    private _max = _nbEtapes * 16;
+
+    while { _pas < _max && { (count _points) < _nbEtapes } } do {
+
+        private _voisins = (roadsConnectedTo _courant) select {
+            !(_x isEqualTo _precedent)
+        };
+
+        // Cul-de-sac : on s'arrête là, le CYCLE ramènera le véhicule.
+        if (_voisins isEqualTo []) exitWith {};
+
+        _precedent = _courant;
+        _courant   = selectRandom _voisins;
+        _pas = _pas + 1;
+
+        if ((_pas % 14) isEqualTo 0) then { _points pushBack (getPos _courant) };
+    };
+
+    _points
+};
+
 ["INFO", "CIVILS", format [
     "vie civile en service - anneau %1-%2 m, oubli a %3 m",
     _distanceMin, _distanceMax, _distanceOubli
@@ -296,12 +358,15 @@ while {true} do {
                 // les voitures.
                 private _plus = round (_voulu * (([_centre] call _fnFacteur) - 1) / 2);
 
-                [_centre, _plus, _taille, "", false] spawn fnc_occupations_civil_init;
+                // Même population que les chauffeurs : une ville dont
+                // les habitants et les automobilistes ne sont pas du
+                // même peuple, ça ne va pas.
+                [_centre, _plus, _taille, _idCiv, false] spawn fnc_occupations_civil_init;
 
                 // Des voitures vides garées le long des rues : c'est ce
                 // qui fait qu'une ville a l'air habitée même quand ses
                 // habitants sont rentrés chez eux.
-                [_centre, _taille] spawn hds_fnc_voituresGarees;
+                [_centre, _taille, -1, _idCiv] spawn hds_fnc_voituresGarees;
 
                 _x set [2, true];
 
@@ -309,6 +374,29 @@ while {true} do {
                     "agglomeration peuplee a l'approche - [%1,%2] r=%3",
                     round (_centre select 0), round (_centre select 1), _taille
                 ]] call hds_fnc_log;
+            };
+
+            // Les voitures garées portent la même marque que le reste :
+            // le balayage les retire dès qu'on s'éloigne du quartier, et
+            // rien ne les remplaçait. En traversant une ville, on en
+            // voyait donc une au début et plus rien ensuite. On complète
+            // à chaque passage, trois par cycle pour étaler le coût.
+            if (_peuplee && _procheAssez) then {
+
+                private _cibleGarees = ((round (_taille / 60)) max 2) min 14;
+
+                private _garees = vehicles select {
+                    _x getVariable ["hds_civil_ambiance", false]
+                    && { alive _x }
+                    && { (crew _x) isEqualTo [] }
+                    && { (_x distance2D _centre) < (_taille + 50) }
+                };
+
+                private _manqueGarees = _cibleGarees - (count _garees);
+
+                if (_manqueGarees > 0) then {
+                    [_centre, _taille, _manqueGarees min 3, _idCiv] spawn hds_fnc_voituresGarees;
+                };
             };
 
             // Désertée : l'étape 1 a déjà retiré ses habitants, on note
@@ -354,8 +442,9 @@ while {true} do {
                     ];
 
                     if (!isNull _veh) then {
-                        _veh setDir (random 360);
-                        _veh setVectorUp (surfaceNormal (getPos _veh));
+                        // L'orientation est posée plus bas, une fois
+                        // l'itinéraire connu : on la veut dans l'axe de
+                        // la route, pas au hasard.
                         _veh setVariable ["hds_civil_ambiance", true, true];
 
                         private _grp = createGroup [civilian, true];
@@ -382,25 +471,55 @@ while {true} do {
                                 _veh forceFollowRoad true;
                             };
 
-                            // Un itinéraire qui part devant lui plutôt
-                            // que de tourner sur place : des routes
-                            // prises plus loin, dans n'importe quelle
-                            // direction autour du départ.
-                            for "_w" from 1 to 3 do {
-                                private _routes = _depart nearRoads (400 + random 900);
-                                if !(_routes isEqualTo []) then {
-                                    private _wp = _grp addWaypoint [
-                                        getPos (selectRandom _routes), 40
-                                    ];
-                                    _wp setWaypointType       "MOVE";
-                                    _wp setWaypointBehaviour  "CARELESS";
-                                    _wp setWaypointSpeed      "LIMITED";
-                                    _wp setWaypointCombatMode "BLUE";
+                            // Un trajet qui suit le réseau routier.
+                            private _etapes = [_depart, 4] call _fnItineraire;
+
+                            if (_etapes isEqualTo []) then { _etapes = [_depart] };
+
+                            {
+                                private _wp = _grp addWaypoint [_x, 25];
+                                _wp setWaypointType             "MOVE";
+                                _wp setWaypointBehaviour        "CARELESS";
+                                _wp setWaypointSpeed            "LIMITED";
+                                _wp setWaypointCombatMode       "BLUE";
+                                _wp setWaypointCompletionRadius 20;
+                            } forEach _etapes;
+
+                            private _cycle = _grp addWaypoint [_depart, 25];
+                            _cycle setWaypointType             "CYCLE";
+                            _cycle setWaypointCompletionRadius 20;
+
+                            _grp setBehaviour  "CARELESS";
+                            _grp setSpeedMode  "LIMITED";
+                            _grp setCombatMode "BLUE";
+
+                            // Orientée vers sa première étape. Elle
+                            // apparaissait avec un cap au hasard, donc
+                            // souvent en travers de la chaussée, et
+                            // commençait par une manœuvre en trois
+                            // temps au milieu de la route.
+                            private _cible = _etapes select 0;
+                            private _dx = (_cible select 0) - (_depart select 0);
+                            private _dy = (_cible select 1) - (_depart select 1);
+
+                            // Pas d'étape exploitable : on s'aligne au
+                            // moins sur l'axe du tronçon de départ.
+                            if ((_dx * _dx + _dy * _dy) <= 1) then {
+                                private _r = _depart nearRoads 30;
+                                if !(_r isEqualTo []) then {
+                                    private _v = roadsConnectedTo (_r select 0);
+                                    if !(_v isEqualTo []) then {
+                                        private _p = getPos (_v select 0);
+                                        _dx = (_p select 0) - (_depart select 0);
+                                        _dy = (_p select 1) - (_depart select 1);
+                                    };
                                 };
                             };
 
-                            private _cycle = _grp addWaypoint [_depart, 40];
-                            _cycle setWaypointType "CYCLE";
+                            if ((_dx * _dx + _dy * _dy) > 1) then {
+                                _veh setDir (((_dx atan2 _dy) + 360) % 360);
+                                _veh setVectorUp (surfaceNormal (getPosATL _veh));
+                            };
 
                             _grp enableDynamicSimulation true;
                             _veh enableDynamicSimulation true;
