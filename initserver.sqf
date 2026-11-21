@@ -12,6 +12,21 @@
 // SETUP SERVEUR
 // ═══════════════════════════════════════════════════════════
 
+// ─── Simulation dynamique ───
+// L'économie de ressources quand personne n'est dans le secteur. Elle
+// demande DEUX choses, et seule la seconde était faite :
+//
+//   1. le système activé pour la mission — c'est cette ligne. Sans
+//      elle, les distances ci-dessous et les « enableDynamicSimulation
+//      true » posés sur chaque groupe ne font rien du tout ;
+//   2. chaque entité marquée. C'est fait aux neuf endroits où le
+//      système crée des groupes (occupations, civils, renforts,
+//      miradors, missions aléatoires).
+//
+// mission.sqm ne porte pas l'attribut Eden correspondant, donc rien
+// ne l'activait : tout tournait à pleine simulation.
+enableDynamicSimulationSystem true;
+
 "Group"        setDynamicSimulationDistance 1500;
 "Vehicle"      setDynamicSimulationDistance 1500;
 "EmptyVehicle" setDynamicSimulationDistance 50;
