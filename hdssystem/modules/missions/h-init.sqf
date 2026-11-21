@@ -10,6 +10,13 @@ fnc_objectif_apprehender = compile preprocessFile "hdssystem\modules\missions\ob
 fnc_objectif_securiser = compile preprocessFile "hdssystem\modules\missions\objectif_securiser.sqf";
 
 fnc_objectif_aleatoire = compile preprocessFile "hdssystem\modules\missions\objectif_aleatoire.sqf";
+
+// Chaîne de missions aléatoires. Le corps dormait dans
+// hdssystem\fonctions\fonctions\ops-missions.sqf sans nom, alors que le
+// générateur web émettait déjà « spawn fnc_hds_missions ». La version
+// corrigée est remontée dans hdssystem\fonctions\, comme les autres
+// fonctions vivantes.
+fnc_hds_missions = compile preprocessFile "hdssystem\fonctions\missions-aleatoires.sqf";
 fnc_objectif_ambiance = compile preprocessFile "hdssystem\modules\missions\marqueur_ambiance.sqf";
 fnc_objectif_liste_batimentsetplaces = compile preprocessFile "hdssystem\modules\missions\objectif_liste_place_dans_batiment.sqf";
 fnc_objectif_creermarqueur = compile preprocessFile "hdssystem\modules\missions\divers\fnc_mission_creermarqueur.sqf";

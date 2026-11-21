@@ -1,66 +1,36 @@
-params ["_objets"];
+/*
+ * fnc_hds_poste_de_communication
+ * Initialise les postes de communication (terminal radio/tactique).
+ * Params: [liste_objets]
+ * Appele cote client (initplayerlocal) — chaque joueur ajoute l'action localement.
+ */
+
+params [["_LesPostes", []]];
+
+// Filtrer les nil/objNull AVANT la boucle — isEqualType retourne false pour nil (sans erreur)
+private _postesValides = _LesPostes select { _x isEqualType objNull && !isNull _x };
+
+if (count _postesValides == 0) exitWith {
+    diag_log "[HDS] poste_de_communication : aucun poste valide (objets non encore synchronises ?)";
+};
+
 {
-  //Recruter une équipe
-  _x addaction [(format ["<t color='#353531'>%1</t>",hds_txt_fonctions_divers_librecruterequipe]),{
-  [2,true,0] spawn fnc_generer_groupe;
-  ["Equipe en cours de regroupement"] remoteexeccall ["systemChat",0];
-  },[],0,false,true,"","",3];
-  //Demander des renforts sur une positions
-  [_x] spawn fnc_hds_demandeurderenforts;
-  //Ouvrir le garage de véhicule
-  if!(isnil "estungarage" or (count estungarage) == 0)then{
-    [
-    _x,
-    (format ["<t color='#353531'>%1</t>",hds_txt_fonctions_divers_libcommandervehicule]),
-    "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_hack_ca.paa",
-    "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_hack_ca.paa",
-    "_this distance _target < 3",
-    "_this distance _target < 3",
-    {},
-    {},
-    {
-      [] call DCON_fnc_Garage_Open;
-    },
-    {},
-    [],
-    0.5,
-    1,
-    false,
-    false
-    ] call BIS_fnc_holdActionAdd;
-  };
-
-  //Permettre de débugger la mission en cours
-  [
-  _x,
-  (format ["<t color='#353531'>%1</t>",hds_txt_fonctions_divers_libdebloquermission]),
-  "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_hack_ca.paa",
-  "\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_hack_ca.paa",
-  "_this distance _target < 3",
-  "_this distance _target < 3",
-  {},
-  {},
-  {
-    if!(isnil "tache_effectuee")then{
-      tache_effectuee = tache_effectuee + 1;publicVariable "tache_effectuee";
-      [format['%1 : %2 %3',hdsversion,tache_effectuee,hds_txt_fonctions_divers_libdebloquermissionignorer]] remoteexeccall ['systemChat',0];
-    }else{
-      [format['%1 : %2',hdsversion,tache_effectuee,hds_txt_fonctions_divers_libdebloquermissionnonexiste]] remoteexeccall ['systemChat',0];
-    };
-  },
-  {},
-  [],
-  5,
-  1,
-  false,
-  false
-  ] call BIS_fnc_holdActionAdd;
-
-  //Permet de plannifier un saut en parachute
-  [
-    1000,
-    -1,
-    _x
-  ] spawn fnc_hds_action_saut_parachute;
-
-} foreach (_this select 0);
+    _x addAction [
+        "<img image='\a3\ui_f\data\IGUI\Cfg\holdactions\holdAction_connect_ca.paa' size='1.5'/> <t color='#00aaff'>Terminal de communication</t>",
+        {
+            params ["_target", "_caller"];
+            hint parseText format [
+                "<t size='1.1' color='#00aaff'><b>Poste de communication</b></t><br/>" +
+                "<t size='0.85'>Terminal operationnel.<br/>Utilisateur : %1<br/>Canal radio actif.</t>",
+                name _caller
+            ];
+        },
+        [],
+        -1,
+        false,
+        true,
+        "",
+        "true",
+        5
+    ];
+} forEach _postesValides;

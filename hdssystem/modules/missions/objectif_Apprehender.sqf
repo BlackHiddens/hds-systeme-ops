@@ -12,8 +12,8 @@ _marqueurlieuderecuperation = [((_marqueurzonedecombat call bis_fnc_randomPosTri
 _marqueurzonedecombat setMarkerAlpha 0;
 _marqueurlieuderecuperation setMarkerAlpha var_mission_transparance_marqueur;
 
-if(hdssysteme)then{_marqueurzonedecombat setMarkerAlpha 1};
-if(hdssysteme)then{_marqueurlieuderecuperation setMarkerAlpha 1};
+[_marqueurzonedecombat, 0] call hds_fnc_debugMarqueur;
+[_marqueurlieuderecuperation, var_mission_transparance_marqueur] call hds_fnc_debugMarqueur;
 
 //configuration de la Cible
 _Cible = [(_this select 0),0,(selectRandom ["I_Story_Officer_01_F"]),independent] call bis_fnc_spawnvehicle;
@@ -52,11 +52,11 @@ _tache = "TacheLivrer" + _rnum;
 _tachetitre = (_this select 1);
 _tacheDesc = format ["Capturer %1 en éliminant ses gardes",(_this select 1)];
 
-if(hdssysteme)then{
-  [true,[_tache],[_tacheDesc,_tachetitre],(_marqueurzonedecombat call BIS_fnc_randomPosTrigger),0,2,true,"interact"] call BIS_fnc_taskCreate;
-}else{
-  [true,[_tache],[_tacheDesc,_tachetitre],objnull,0,2,true,"interact"] call BIS_fnc_taskCreate;
-};
+// La tache est creee sans destination : c'est hds_fnc_debugTache
+// qui pose le repere quand le mode debug est allume, et qui le
+// retire dans la seconde s'il est decoche.
+[true,[_tache],[_tacheDesc,_tachetitre],objnull,0,2,true,"interact"] call BIS_fnc_taskCreate;
+[_tache, (_marqueurzonedecombat call BIS_fnc_randomPosTrigger)] call hds_fnc_debugTache;
 
 
 _Apprehender = 0;

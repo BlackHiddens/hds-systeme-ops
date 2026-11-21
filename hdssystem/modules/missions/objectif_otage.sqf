@@ -10,8 +10,8 @@ _marqueurdemission = [((_marqueurzonedecombat call bis_fnc_randomPosTrigger)),(_
 _marqueurzonedecombat setMarkerAlpha 0;
 _marqueurdemission setMarkerAlpha var_mission_transparance_marqueur;
 
-if(hdssysteme)then{_marqueurzonedecombat setMarkerAlpha 1};
-if(hdssysteme)then{_marqueurdemission setMarkerAlpha 1};
+[_marqueurzonedecombat, 0] call hds_fnc_debugMarqueur;
+[_marqueurdemission, var_mission_transparance_marqueur] call hds_fnc_debugMarqueur;
 
 _HommeTable = ["I_Survivor_F","C_man_pilot_F","C_IDAP_Pilot_01_F","I_pilot_F","B_Helipilot_F","B_Survivor_F","B_Pilot_F"];
 _HommeSelectionner = selectRandom _HommeTable;
@@ -60,11 +60,11 @@ _tache = "TacheOtage" + _rnum + str((_this select 0));
 _tachetitre = (_this select 1);
 _tacheDesc = format ["Extraire %1 actuellement captif sur zone",_NomCible];
 
-if(hdssysteme)then{
-  [true,[_tache],[_tacheDesc,_tachetitre],(_marqueurzonedecombat call BIS_fnc_randomPosTrigger),0,2,true,"help"] call BIS_fnc_taskCreate;
-}else{
-  [true,[_tache],[_tacheDesc,_tachetitre],objnull,0,2,true,"help"] call BIS_fnc_taskCreate;
-};
+// La tache est creee sans destination : c'est hds_fnc_debugTache
+// qui pose le repere quand le mode debug est allume, et qui le
+// retire dans la seconde s'il est decoche.
+[true,[_tache],[_tacheDesc,_tachetitre],objnull,0,2,true,"help"] call BIS_fnc_taskCreate;
+[_tache, (_marqueurzonedecombat call BIS_fnc_randomPosTrigger)] call hds_fnc_debugTache;
 
 waituntil {_HommeOtage inArea [(getMarkerPos (hdsnombase select 0)),100,100,0,false] || !alive _HommeOtage || [_tache] call BIS_fnc_taskCompleted};
 

@@ -1,93 +1,227 @@
-//Mes outils
-hdsversion = "ai-hds-systeme.stable";   //Nom de la version du hds-systeme-ops. Si le hds-systeme-ops annonce des choses il le fera sous ce nom
-hdsnombase = ["hds-ros-base"];  //placer un marqueur sur votre base afin qu'elle soit prise en compte par le script (facultatif mais conseillé en mission automatique)
-hdssysteme = false;              //hds-systeme-ops en mode débug. il annonce tous ce qu'il fait
-//Tous mes objets scriptés
-lelieuestunvehicule = false;     //Le lieu médical est un véhicule ? sinon c'est un lieu
-sontdeslieudesoin = [soins];    //Liste des objets qui sont des lieux de soins
-sontdesarsenales = [arsenal_console];          //Liste des objets qui sont des arsenales
-sontdespostesdecommunications = [arsenal_console]; //liste des objets qui sont des terminal de communications (Il met à disposition des ressources pour les joueurs)
-estungarage = [arsenal_console,[8237.49,10049.9,-7.62939e-006]];//[<objet>,<position>]
-estunravitaillement = [[8237.49,10049.9,-7.62939e-006],10]; //[<position>,<rayon>]
+// ═══════════════════════════════════════════════════════════
+// HDS Paramètres — NewHDS (Stratis)
+// Prérequis mod : CBA_A3 uniquement. Tout le reste est optionnel
+// et détecté à chaud (voir « Détection addons » plus bas).
+// ═══════════════════════════════════════════════════════════
 
-sontdesmanageurs = ["chef_one","chef_two","invite_0"];
-sontdesexpertcoms = ["communication_one","communication_two","invite_1"];
-sontdesmedecins = ["medecin_one","medecin_two","invite_3","invite_4"];
-sontdesingenieurs = ["mecano_one","mecano_two","invite_2"];
-sontdespilotes = ["pilote_one","pilote_two","invite_5"];
-sontdescontractor = ["contractor_1","contractor_2","contractor_3","contractor_4","contractor_5","contractor_6"];
+hdsversion  = "newhds.stratis";
+hdsnombase  = ["hds_base_newhds"];
+// ─── Mode debug ───
+// Ce qu'il allume : les traces dans le RPT, les messages en chat, les
+// cercles rouges de zone d'occupation et les marqueurs d'ennemis sur la
+// carte. Autrement dit, tout ce qui ne doit pas se voir en ligne.
+//
+// Il ne faut pas avoir à s'en souvenir avant une mise en ligne : la
+// valeur se déduit de qui fait tourner la mission.
+//
+//   "AUTO"  → allumé quand c'est toi qui l'héberges sur ta machine
+//             (aperçu d'éditeur, serveur local), éteint dès qu'elle
+//             tourne sur un serveur dédié. À laisser.
+//   true    → forcé allumé, même en ligne.
+//   false   → forcé éteint, même en local.
+//
+// isServer && hasInterface, c'est exactement « la machine qui héberge
+// est aussi celle où je joue ». Un serveur dédié n'a pas d'interface,
+// et un client n'est pas serveur : les deux retombent sur false.
+//
+// Le réglage CBA « Mode debug » (Échap → Options → Addons → HDS) passe
+// par-dessus en cours de partie, et comme il est déclaré global c'est
+// la valeur du serveur qui fait loi pour tout le monde.
+hds_debug_choix = "AUTO";
+hdssysteme = if (hds_debug_choix isEqualType true) then {
+    hds_debug_choix
+} else {
+    isServer && hasInterface
+};
 
-sontdesappuismanageurs = [radio_appui];
-sontdesappuisexpertcoms = [radio_appui];
-sontdesappuismedicals = [radio_appui];
-sontdesappuisingenieurs = [radio_appui];
-sontdesappuispilotes = [radio_appui];
-sontdesappuiscontractor = [radio_appui];
+// Opacite des formes que le mode debug allume : cercles de secteur,
+// zones de combat. A 1 elles noircissent la carte et cachent le
+// terrain ; 0.3 laisse lire ce qu'il y a dessous. Ne s'applique qu'aux
+// marqueurs que le debug rend visibles : celui qu'une mission demande
+// pour elle-meme garde l'opacite qu'elle a choisie.
+hds_debug_alpha = 0.3;
 
-//Activation des fonctions personnalisées
-boutiqueactive = false;//Est-ce que le mode d'argent est activé ?
-modehardactive = false;//Est-ce que mode limination d'equipement est activé ?
-sauvegarderlesequipements = false; //Sauvegarder et charge les equipements des joueurs sur le serveur
+// ─── Rôles joueurs ───
+// Des CHAÎNES : comparées à vehicleVarName player.
+// Les noms correspondent à ceux posés dans mission.sqm :
+//   chef_alpha_0        B_Soldier_TL_F   chef d'equipe
+//   mitrailleur_alpha_0 B_soldier_AR_F
+//   grenadier_alpha_0   B_Soldier_GL_F
+//   antichar_alpha_0    B_soldier_LAT_F
+//
+// Le chef est « manageur » : il reçoit les traits ingénieur ET médecin,
+// ce qui suffit à couvrir les deux besoins avec une équipe de quatre.
+sontdesmanageurs    = ["chef_alpha_0"];
+sontdesexpertcoms   = ["grenadier_alpha_0"];   // non lu par le chemin vivant (voir note en bas)
+sontdesmedecins     = [];                      // couvert par le manageur
+sontdesingenieurs   = [];                      // couvert par le manageur
+sontdespilotes      = [];
+sontdescontractor   = [];
 
-//Détection automatique des addons présent dans la mission afin de les utiliser.
-if (isClass(configFile >> "CfgPatches" >> "ace_main"))then{aceestactive = true}else{aceestactive = false};          //ace
-if (isClass(configFile >> "CfgPatches" >> "po_main"))then{opforactive = true}else{opforactive = false};             //projectOpfor
-if (isClass(configFile >> "CfgPatches" >> "rhs_main"))then{afrfactive = true}else{afrfactive = false};              //rhsafrf
-if (isClass(configFile >> "CfgPatches" >> "rhsusf_main"))then{usafactive = true}else{usafactive = false};           //rhsusaf
-if (isClass(configFile >> "CfgPatches" >> "FFCamoPack_Common"))then{foxforactive = true}else{foxforactive = false}; //foxforCamoPack
-cosactive = isClass (configFile >> "CfgPatches" >> "COS_equips");           //C.O.S
-if (isClass(configFile >> "CfgPatches" >> "rds_A2_Civilians"))then{rdsactive = true}else{rdsactive = false};        //RDS Civilian Pack
-if (isClass(configFile >> "CfgPatches" >> "Project_Numb_3"))then{numbactive = true}else{numbactive = false};        //Project_Numb_3 activé
+sontdesappuismanageurs  = [];
+sontdesappuisexpertcoms = [];
+sontdesappuismedicals   = [];
+sontdesappuisingenieurs = [];
+sontdesappuispilotes    = [];
+sontdesappuiscontractor = [];
 
-//Administrateur du serveur où est héberger la mission
-hds_administrateurs = [
-"76561198024919122", //Hidden's
-"76561198051943976", //Defconleader
-"76561197982924970"  //Adam's
+// ─── Objets de la base ───
+// Des OBJETS, pas des chaînes : ce sont les noms de variables de
+// mission.sqm, résolus directement.
+//   arsenal_alpha_0/1  B_supplyCrate_F
+//   soins_alpha_0      Box_NATO_Support_F
+//   console_alpha_0    Land_Laptop_unfolded_F
+// initserver.sqf les repose au sol après chargement, pour qu'un
+// décalage de terrain ne les laisse pas flotter.
+sontdeslieudesoin             = [soins_alpha_0];
+sontdesarsenales              = [arsenal_alpha_0, arsenal_alpha_1];
+sontdespostesdecommunications = [console_alpha_0];
+
+lelieuestunvehicule = false;
+estunravitaillement = [[0, 0, 0], 10];
+
+// ─── Options ───
+boutiqueactive            = false;
+modehardactive            = false;
+sauvegarderlesequipements = false;
+
+// ─── Détection addons (soft dependencies) ───
+// Aucun de ces mods n'est requis : chaque fonctionnalité qui en dépend
+// a un repli vanilla/CBA dans hdssystem\compat\h-compat.sqf.
+cbaestactive  = isClass (configFile >> "CfgPatches" >> "cba_main");
+aceestactive  = isClass (configFile >> "CfgPatches" >> "ace_main");
+opforactive   = isClass (configFile >> "CfgPatches" >> "po_main");
+afrfactive    = isClass (configFile >> "CfgPatches" >> "rhs_main");
+usafactive    = isClass (configFile >> "CfgPatches" >> "rhsusf_main");
+// GREF et SAF manquaient : ils étaient chargés, contribuaient au registre
+// (d'où 205 factions trouvées) mais n'apparaissaient nulle part.
+grefactive    = isClass (configFile >> "CfgPatches" >> "rhsgref_main");
+safactive     = isClass (configFile >> "CfgPatches" >> "rhssaf_main");
+foxforactive  = isClass (configFile >> "CfgPatches" >> "FFCamoPack_Common");
+cosactive     = isClass (configFile >> "CfgPatches" >> "COS_equips");
+rdsactive     = isClass (configFile >> "CfgPatches" >> "rds_A2_Civilians");
+numbactive    = isClass (configFile >> "CfgPatches" >> "Project_Numb_3");
+
+// ─── Admins ───
+hds_administrateurs = ["76561198024919122"];
+
+prix = [0,0,0,0,0,0,0,0,0,0,0];
+
+// ─── Localisation (textes d'interface) ───
+//
+// Il n'y a pas de stringtable.xml dans cette mission, et les deux
+// fichiers qui définissaient ces 46 variables par « localize » —
+// hdssystem\init-serveur.sqf et init-client.sqf — ne sont appelés par
+// rien. Les textes sont donc écrits ici, en clair. Le jour où une
+// stringtable arrive, c'est cette liste qu'on remplace.
+hds_txt_fonctions_arsenal_libinteraction = "Accéder à la boutique";
+hds_txt_fonctions_medical_santestable    = "Santé stabilisée.";
+
+// Noms des objectifs, lus par fnc_objectif_aleatoire — donc par
+// fnc_hds_missions. Sans eux, la première variable indéfinie avortait
+// fnc_objectif_aleatoire et aucune tâche n'était créée : la mission
+// attendait alors indéfiniment des tâches qui ne viendraient jamais.
+hds_txt_objectif_communication = "Interrompre les communications";
+hds_txt_objectif_otage         = "Libérer un otage";
+hds_txt_objectif_logistique    = "Détruire la logistique";
+hds_txt_objectif_hvt           = "Éliminer une cible de valeur";
+hds_txt_objectif_infos         = "Récupérer des renseignements";
+hds_txt_objectif_piratage      = "Pirater un terminal";
+hds_txt_objectif_structure     = "Capturer et tenir une structure";
+hds_txt_objectif_cache         = "Détruire une cache d'armes";
+hds_txt_objectif_arrestation   = "Procéder à une arrestation";
+hds_txt_objectif_securiser     = "Sécuriser le secteur";
+
+// ─── Tours de guet ───
+// Dans un secteur d'occupation, ces bâtiments-là reçoivent au moins un
+// homme, quoi qu'en dise le ratio de garnison : une tour vide ne sert
+// à rien. Les autres bâtiments ne changent pas.
+//
+// Classes vanilla vérifiées dans les archives du jeu. Les tours des
+// mods et des cartes tierces sont reconnues à la mesure (haute et
+// étroite, avec une place en hauteur), donc cette liste n'a pas à être
+// exhaustive — elle sert à nommer les cas sûrs. Ajoute-s-y ce que la
+// mesure raterait.
+hds_miradors_classes = [
+    "Land_Cargo_Patrol_V1_F", "Land_Cargo_Patrol_V2_F",
+    "Land_Cargo_Patrol_V3_F", "Land_Cargo_Patrol_V4_F",
+    "Land_Cargo_Tower_V1_F",  "Land_Cargo_Tower_V2_F",
+    "Land_Cargo_Tower_V3_F",  "Land_Cargo_Tower_V4_F",
+    "Land_Cargo_Tower_V1_No1_F", "Land_Cargo_Tower_V1_No2_F",
+    "Land_Cargo_Tower_V1_No3_F", "Land_Cargo_Tower_V1_No4_F",
+    "Land_Cargo_Tower_V1_No5_F", "Land_Cargo_Tower_V1_No6_F",
+    "Land_Cargo_Tower_V1_No7_F",
+    "Land_TTowerBig_1_F", "Land_TTowerBig_2_F"
 ];
-//----------------------Fonctions (Pour les utilisateurs avancé)-----------------------------------------------
-prix = [
-  0.0,//Prix de l'arme principale
-  0.0,  //Prix de l'arme secondaire
-  0.0,  //Prix du pistolet
-  49.99, //Prix d'un chargeur
-  119.99,//Prix d'un sac à dos
-  689.99,//Prix d'un module principale
-  499.99,//Prix d'un module de pistolet
-  25.99, //Prix d'un objet
-  80.00, //Prix d'une paire de lunette ou d'un bandane
-  559.00,//Prix vision nocture
-  20.00, //Prix gilet
-  99.99 //prix chapeaux et casques
-];
-fnc_hds_arsenaux = compile preprocessFile "hdssystem\fonctions\arsenaux.sqf";//[Liste d'objet:<tableau>] spawn fnc_hds_arsenaux;
-  fnc_hds_arsenal_complet = compile preprocessFile "hdssystem\fonctions\arsenaux\complet.sqf";
-  fnc_hds_arsenal_gios = compile preprocessFile "hdssystem\fonctions\arsenaux\gios.sqf";
-  fnc_hds_arsenal_prive = compile preprocessFile "hdssystem\fonctions\arsenaux\prive.sqf";
-  fnc_hds_arsenal_afghan = compile preprocessFile "hdssystem\fonctions\arsenaux\afghan.sqf";
-  fnc_hds_arsenal_numb = compile preprocessFile "hdssystem\fonctions\arsenaux\numb.sqf";
-  fnc_hds_poste_de_communication = compile preprocessFile "hdssystem\fonctions\postedecommunication.sqf";
-fnc_hds_garages = compile preprocessFile "virtualgarage\virtualgarage.sqf";
-fnc_hds_ravitaillement = compile preprocessFile "hdssystem\fonctions\ops-rearmement.sqf";
-fnc_hds_medical = compile preprocessFile "hdssystem\fonctions\lieumedical.sqf";//[Liste d'objet:<tableau>] spawn fnc_hds_medical;
-fnc_hds_peuposerattelle = compile preprocessFile "hdssystem\fonctions\poseattelle.sqf";//[<Utilisateur:Objet>] spawn fnc_hds_peuposerattelle;
-fnc_hds_pointreapparition = compile preprocessFile "hdssystem\fonctions\pointderespawn.sqf";//[] spawn fnc_hds_pointreapparition;
-fnc_hds_creerequipages = compile preprocessFile "hdssystem\fonctions\generationequipages.sqf";//[<Utilisateur:objet>] spawn fnc_hds_pointreapparition;
-fnc_hds_consteste =  compile preprocessFile "hdssystem\fonctions\ops-conteste.sqf";//[<faction:entier>,<ratio:entier>] spawn fnc_hds_carteconsteste;
-fnc_ace_garnir = compile preprocessFile "hdssystem\fonctions\garnirhabitations.sqf";//[<marqueur>,<tableau>,<entier>,<booleen>] spawn fnc_ace_garnirhabitation;
-fnc_fnc_informations = compile preprocessFile "hdssystem\fonctions\informations.sqf";//[<texte>] spawn fnc_fnc_informations;
-fnc_hds_introduction = compile preprocessFile "hdssystem\fonctions\introscenario.sqf";
-fnc_hds_fin = compile preprocessFile "hdssystem\fonctions\finscenario.sqf";
-fnc_hds_missions = compile preprocessFile "hdssystem\fonctions\ops-missions.sqf";//[<entier>:rayon,<entier>:faction,<entier>:nombremissions] spawn fnc_hds_missions;
-fnc_hds_populace = compile preprocessFile "hdssystem\fonctions\ops-populace.sqf";//[<entier>:nationnalité,<entier>:ratio,<entier>:rayon] spawn fnc_hds_populace;
-fnc_engima_traffic = compile preprocessFile "engima\traffic\init.sqf";
-fnc_hds_boutique = compile preprocessFile "hdssystem\fonctions\argent\boutiques.sqf";
-fnc_hds_ajoutaction = compile preprocessFile "hdssystem\fonctions\ajouteraction.sqf";
-fnc_hds_saveequipement = compile preprocessFile "hdssystem\fonctions\ops-saveequipement.sqf";
-fnc_hds_presence_hostile = compile preprocessFile "hdssystem\fonctions\ops-presence-hostile.sqf";
-fnc_hds_soustitre = compile preprocessFile "hdssystem\fonctions\soustitre.sqf";
-fnc_hds_demandeurderenforts = compile preprocessFile "hdssystem\fonctions\ops-demanderdesrenforts.sqf";
-fnc_hds_utilisateurdegcam = compile preprocessFile "hdssystem\fonctions\ops-utilisateurdegcam.sqf";
-fnc_support_avions = compile preprocessFile "hdssystem\fonctions\demandebombardement.sqf";
-fnc_hds_action_saut_parachute = compile preprocessFile "hdssystem\fonctions\sauteenparachute.sqf";
-//exécution natif -- Ne pas supprimer
+
+// ─── Journal d'exécution (en premier : tout le reste peut y écrire) ───
+#include "hdssystem\modules\journal\h-init.sqf"
+
+// ─── Couche de compatibilité ───
+#include "hdssystem\compat\h-compat.sqf"
+
+// ─── Mode debug réversible ───
+// Avant les réglages : leur script de changement appelle
+// hds_fnc_debugAppliquer, qui doit donc exister d'abord.
+#include "hdssystem\debug-mode.sqf"
+
+// ─── Réglages en jeu (menu CBA) ───
+// Après le journal, dont ces réglages se servent pour signaler une
+// erreur. Des deux côtés : le menu doit exister chez les clients.
+#include "hdssystem\modules\reglages\h-init.sqf"
+
+// ─── Fonctions HDS (fichiers) ───
+fnc_hds_ajoutaction            = compile preprocessFile "hdssystem\fonctions\ajouteraction.sqf";
+fnc_hds_arsenaux               = compile preprocessFile "hdssystem\fonctions\arsenaux.sqf";
+fnc_hds_medical                = compile preprocessFile "hdssystem\fonctions\lieumedical.sqf";
+fnc_hds_poste_de_communication = compile preprocessFile "hdssystem\fonctions\postedecommunication.sqf";
+
+// Circuit de patrouille sur les routes d'une zone, pour les
+// equipes embarquees. Rend faux si la zone est sans route.
+hds_fnc_circuitRoutier         = compile preprocessFile "hdssystem\fonctions\circuit-routier.sqf";
+
+// Poste un homme dans chaque tour de guet d'un secteur.
+hds_fnc_miradors               = compile preprocessFile "hdssystem\fonctions\miradors.sqf";
+
+// ─── Renforts alliés : la partie CLIENT ───
+// Ces trois fonctions tournent sur le client (carte, actions, chat).
+// Elles étaient compilées dans modules\occupations\h-init.sqf, qui n'est
+// chargé que par le serveur via init-systeme.sqf : elles n'existaient
+// donc sur aucun client, alors que c'est précisément là qu'on les
+// appelle. Ici, mes-parametres.sqf est inclus des deux côtés.
+fnc_renfort_allie        = compile preprocessFile "hdssystem\modules\occupations\h-renfortallie\h-RenfortAllie.sqf";
+fnc_generer_groupe       = compile preprocessFile "hdssystem\modules\occupations\h-renfortallie\recrueperso.sqf";
+fnc_EstUnTerminalRenfort = compile preprocessFile "hdssystem\modules\occupations\h-renfortallie\h-AjouterActionRenfort.sqf";
+
+// ─── Réception de l'export du registre (côté client) ───
+// Le serveur construit le JSON, le client le met dans son presse-papier.
+hds_fnc_factionsExportRecoit = compile preprocessFile "hdssystem\modules\factions\fncs\export-recoit.sqf";
+
+/*
+ * NOTE — rôles effectivement lus
+ * Dans NewHDS, seuls sontdesmanageurs, sontdesmedecins et
+ * sontdesingenieurs sont lus (initplayerlocal.sqf, onplayerrespawn.sqf).
+ * sontdesexpertcoms, sontdespilotes et sontdescontractor ne sont lus que
+ * par hdssystem\init-client.sqf et init-reapparition.sqf, qui ne sont
+ * chargés par rien pour l'instant. Ils sont renseignés quand même : la
+ * donnée est juste, elle servira si ces fichiers sont remis en service.
+ */
+
+/*
+ * NOTE — fnc_hds_boutique
+ * hdssystem\fonctions\arsenaux.sqf pose une action qui l'appelle, mais
+ * la fonction n'existe nulle part dans cette version. Le piège est
+ * dormant : il faut boutiqueactive ET ACE pour l'atteindre, et il
+ * n'éclaterait qu'au moment où un joueur déclenche l'action, pas au
+ * chargement. Le stub ci-dessous le rend inoffensif et dit pourquoi.
+ */
+
+// ─── Fonctions stub (modules non déployés dans cette version) ───
+fnc_hds_boutique          = { hint "La boutique n'est pas déployée dans cette version."; };
+fnc_fnc_informations      = { params ["_texte"]; hint _texte; };
+fnc_hds_ravitaillement    = { };
+fnc_hds_saveequipement    = { };
+fnc_hds_creerequipages    = { };
+fnc_hds_peuposerattelle   = { };
+fnc_hds_pointreapparition = { };
+fnc_hds_soustitre         = { };

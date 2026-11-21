@@ -1,0 +1,14 @@
+# Git ne touche à aucun octet de ce dépôt.
+#
+# Pourquoi : un dossier de mission Arma mélange des formats que la
+# conversion automatique des fins de ligne abîmerait.
+#
+#   - les .paa, .ogg, .wav, .jpg et un .sqm binarisé sont binaires :
+#     une conversion CRLF les détruit purement et simplement ;
+#   - description.ext et les .hpp sont en Windows-1252, pas en UTF-8,
+#     parce que l'analyseur de config d'Arma n'accepte que ça ;
+#   - les .sqf sont en UTF-8.
+#
+# Plutôt que d'énumérer les cas, on dit à Git de laisser les fichiers
+# exactement tels qu'ils sont, dans les deux sens.
+* -text
