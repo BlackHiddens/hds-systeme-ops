@@ -123,12 +123,29 @@ private _poser = {
     false
 ] call _poser;
 
+// ══════════════════════════════════════════════════════════
+// 6. Densité du trafic civil  →  hds_civils_densite
+// ══════════════════════════════════════════════════════════
+// Relu à chaque cycle par fnc_hds_vie_civile : le changement prend
+// effet en huit secondes, sans relancer la mission. C'est le nombre de
+// véhicules entretenus AUTOUR des joueurs, pas sur toute la carte —
+// l'ancien VEHICLES_COUNT d'Engima valait 5.
+[
+    "hds_civils_densite", "SLIDER",
+    ["Densité du trafic civil", "Nombre de véhicules civils entretenus autour des joueurs. 0 : plus de trafic, mais les habitants restent."],
+    [0, 30, 8, 0],
+    1,
+    { params ["_v"]; hds_civils_densite = _v; },
+    false
+] call _poser;
+
 // ─── Valeurs de repli ───
 // Si CBA n'a pas pris la main (API changée, réglage non encore reçu),
 // ces variables doivent exister quand même : tout le code qui les lit
 // passe par getVariable avec défaut, mais autant être explicite.
 if (isNil "hds_faction_forcee") then { hds_faction_forcee = "AUTO" };
 if (isNil "hds_civils_actifs")  then { hds_civils_actifs = true };
+if (isNil "hds_civils_densite") then { hds_civils_densite = 8 };
 
 hds_reglages_actifs = true;
 

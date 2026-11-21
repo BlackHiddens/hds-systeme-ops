@@ -123,6 +123,12 @@ for "_i" from 1 to _nb do {
         [_centre, nil, [_hommeC], _taille, 1, false, true] call hds_fnc_garnison;
         [_hommeC, "SIT_LOW_U", "NONE"] call BIS_fnc_ambientAnim;
         _hommeC enableDynamicSimulation true;
+
+        // Civil d'ambiance : fnc_hds_vie_civile le retirera quand plus
+        // aucun joueur ne sera assez près pour le voir. La marque est
+        // ce qui le distingue d'un otage ou d'un VIP posé par une
+        // mission, qui ne doit jamais être balayé.
+        _hommeC setVariable ["hds_civil_ambiance", true, true];
     };
 
     // Piéton : il déambule dans le tiers central
@@ -131,6 +137,7 @@ for "_i" from 1 to _nb do {
     if (!isNull _hommeP) then {
         [(_pieton select 2), _centre, (_taille / 3)] call BIS_fnc_taskPatrol;
         _hommeP enableDynamicSimulation true;
+        _hommeP setVariable ["hds_civil_ambiance", true, true];
     };
 };
 
