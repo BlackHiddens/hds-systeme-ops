@@ -69,7 +69,9 @@ params [
     ["_typeLocalisation", ["NameCity", "NameVillage"]],
     ["_distanceMin",      300],
     ["_distanceMax",      500],
-    ["_distanceOubli",    1400]
+    ["_distanceOubli",    1400],
+    ["_distancePresence", 600],
+    ["_distanceTrafic",   900]
 ];
 
 if (!canSuspend) exitWith {
@@ -111,6 +113,7 @@ if (_classesVeh isEqualTo [] || { _classesHom isEqualTo [] }) exitWith {
 // Valeur de départ du réglage en jeu, si le menu CBA ne l'a pas encore
 // posée (API changée, réglage pas encore reçu du serveur).
 if (isNil "hds_civils_densite") then { hds_civils_densite = _densite };
+if (isNil "hds_civils_portee")  then { hds_civils_portee  = _distanceMax };
 
 // ═══════════════════════════════════════════════════════════
 // LES AGGLOMÉRATIONS, RELEVÉES UNE SEULE FOIS
@@ -227,8 +230,20 @@ private _fnRouteAutour = {
 
     for "_essai" from 1 to 12 do {
         private _ancre = selectRandom _autour;
-        private _angle = random 360;
-        private _d     = _min + random (_max - _min);
+
+        // ── Faire apparaître DEVANT, pas tout autour ──
+        // Engima ne semait pas au hasard : il visait un point en avant
+        // du joueur. C'est ce qui fait qu'on croise des voitures au lieu
+        // d'en deviner derrière soi. Deux fois sur trois on reste dans
+        // un cône de ±55° autour de son cap, le reste au hasard pour que
+        // les routes latérales ne soient pas mortes.
+        private _angle = if ((random 1) < 0.67) then {
+            (getDir _ancre) - 55 + random 110
+        } else {
+            random 360
+        };
+
+        private _d = _min + random (_max - _min);
 
         private _p = [
             (getPosATL _ancre select 0) + _d * sin _angle,
@@ -297,8 +312,8 @@ private _fnItineraire = {
 };
 
 ["INFO", "CIVILS", format [
-    "vie civile en service - anneau %1-%2 m, oubli a %3 m",
-    _distanceMin, _distanceMax, _distanceOubli
+    "vie civile en service - portee reglable (menu CBA), %1 m au demarrage ; habitants oublies a %2 m",
+    _distanceMax, _distanceOubli
 ]] call hds_fnc_log;
 
 // ═══════════════════════════════════════════════════════════
@@ -311,6 +326,24 @@ while {true} do {
     private _joueurs = allPlayers select {
         alive _x && { !(_x isKindOf "HeadlessClient_F") }
     };
+
+    // ─── Une seule distance a regler, le reste en decoule ───
+    // Chez Engima c'etait MIN_SPAWN_DISTANCE / MAX_SPAWN_DISTANCE, et
+    // elles se modifiaient dans le fichier de config. Ici c'est un
+    // curseur du menu CBA, relu a chaque cycle : le changement prend
+    // effet en cinq secondes, sans relancer la mission.
+    //
+    //   portee        la distance maximale d'apparition
+    //   x 0.6         la minimale : assez loin pour ne rien voir naitre
+    //   + 100         le rayon ou le quota est compte
+    //   x 1.8         au-dela, le vehicule est oublie
+    private _portee = round (missionNamespace getVariable ["hds_civils_portee", _distanceMax]);
+    if (_portee < 120) then { _portee = 120 };
+
+    private _dMin  = round (_portee * 0.6);
+    private _dMax  = _portee;
+    private _dPres = _portee + 100;
+    private _dTraf = round (_portee * 1.8);
 
     // ─── 1. OUBLI ───
     // Réglage décoché, ou plus personne connecté : on vide tout. C'est
@@ -334,8 +367,30 @@ while {true} do {
     } else {
 
         {
-            if ([_x, _joueurs, _distanceOubli] call _fnLoin) then {
-                [_x] call _fnSupprimer;
+            private _o = _x;
+
+            // ── Deux distances, et c'est tout le problème ──
+            // Un véhicule qui roule est entretenu bien plus serré que
+            // les habitants. Engima supprimait tout ce qui dépassait sa
+            // distance d'apparition maximale, soit 500 m : c'est ce qui
+            // fait qu'on croise toujours quelqu'un, parce que le quota
+            // est maintenu DANS le voisinage immédiat.
+            //
+            // Avec une seule distance à 1400 m, huit voitures se
+            // répartissaient sur un rayon d'un kilomètre et demi — des
+            // routes vides, exactement ce qui se voyait en jeu. Les
+            // habitants, eux, gardent la distance large : une ville qu'on
+            // traverse ne doit pas se vider derrière soi.
+            private _roulant = if (_o isKindOf "Man") then {
+                !((vehicle _o) isEqualTo _o)
+            } else {
+                !((crew _o) isEqualTo [])
+            };
+
+            private _limite = if (_roulant) then { _dTraf } else { _distanceOubli };
+
+            if ([_o, _joueurs, _limite] call _fnLoin) then {
+                [_o] call _fnSupprimer;
             };
         } forEach (call _fnAmbiance);
 
@@ -351,7 +406,7 @@ while {true} do {
             private _lieu = _x;
             _lieu params ["_centre", "_taille", "_peuplee", "_routesOk", "_prochain"];
 
-            private _procheAssez = !([_centre, _joueurs, _taille + _distanceMax] call _fnLoin);
+            private _procheAssez = !([_centre, _joueurs, _taille + _dMax] call _fnLoin);
             private _desertee    =  [_centre, _joueurs, _taille + _distanceOubli] call _fnLoin;
 
             if (_procheAssez) then {
@@ -461,11 +516,14 @@ while {true} do {
 
             private _cible = round (_voulu * ([_ancre] call _fnFacteur));
 
+            // On compte PRÈS, et on supprime loin. Compter sur la
+            // distance d'oubli revenait à considérer comme « du trafic »
+            // une voiture à un kilomètre, invisible depuis la route.
             private _ici = vehicles select {
                 _x getVariable ["hds_civil_ambiance", false]
                 && { alive _x }
                 && { !((crew _x) isEqualTo []) }
-                && { (_x distance2D _ancre) < _distanceOubli }
+                && { (_x distance2D _ancre) < _dPres }
             };
 
             private _manque = _cible - (count _ici);
@@ -482,9 +540,9 @@ while {true} do {
             private _sansRoute = 0;
 
             if (_manque > 0) then {
-                for "_i" from 1 to (_manque min 6) do {
+                for "_i" from 1 to (_manque min 8) do {
 
-                private _depart = [_equipe, _distanceMin, _distanceMax, _joueurs] call _fnRouteAutour;
+                private _depart = [_equipe, _dMin, _dMax, _joueurs] call _fnRouteAutour;
 
                 if (_depart isEqualTo []) then { _sansRoute = _sansRoute + 1 };
 
@@ -525,7 +583,12 @@ while {true} do {
                             };
 
                             // Un trajet qui suit le réseau routier.
-                            private _etapes = [_depart, 4] call _fnItineraire;
+                            // Deux etapes, pas quatre : avec un long
+                            // trajet la voiture quittait le secteur
+                            // et se faisait supprimer avant meme
+                            // d'avoir ete croisee. Courte boucle,
+                            // elle tourne dans le coin.
+                            private _etapes = [_depart, 2] call _fnItineraire;
 
                             if (_etapes isEqualTo []) then { _etapes = [_depart] };
 
@@ -596,5 +659,7 @@ while {true} do {
         } forEach _grappes;
     };
 
-    sleep 8;
+    // Cinq secondes plutot que huit : a 60 km/h on parcourt 80 m
+    // entre deux passages, et le trafic suit mieux le joueur.
+    sleep 5;
 };

@@ -139,6 +139,28 @@ private _poser = {
     false
 ] call _poser;
 
+// ══════════════════════════════════════════════════════════
+// 7. Portée de la vie civile  →  hds_civils_portee
+// ══════════════════════════════════════════════════════════
+// Distance maximale d'apparition des véhicules civils. Tout le reste
+// en découle : la distance minimale (60 %), le rayon où le quota est
+// compté (+100 m), et celle au-delà de laquelle on oublie (x1,8).
+//
+// Court (300-500) : du monde sur la route juste autour de toi, et rien
+// au loin. C'est le réglage d'origine, celui qui donnait l'impression
+// de routes vivantes. Long (900+) : le trafic s'étale, les mêmes
+// véhicules couvrent plus de terrain, donc on en croise moins.
+//
+// Relu à chaque cycle : effet en cinq secondes.
+[
+    "hds_civils_portee", "SLIDER",
+    ["Portée de la vie civile", "Distance maximale d'apparition des véhicules civils, en mètres. Plus court = plus dense autour de toi."],
+    [200, 1500, 500, 0],
+    1,
+    { params ["_v"]; hds_civils_portee = _v; },
+    false
+] call _poser;
+
 // ─── Valeurs de repli ───
 // Si CBA n'a pas pris la main (API changée, réglage non encore reçu),
 // ces variables doivent exister quand même : tout le code qui les lit
@@ -146,6 +168,7 @@ private _poser = {
 if (isNil "hds_faction_forcee") then { hds_faction_forcee = "AUTO" };
 if (isNil "hds_civils_actifs")  then { hds_civils_actifs = true };
 if (isNil "hds_civils_densite") then { hds_civils_densite = 8 };
+if (isNil "hds_civils_portee")  then { hds_civils_portee = 500 };
 
 hds_reglages_actifs = true;
 
