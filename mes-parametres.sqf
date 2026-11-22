@@ -186,6 +186,13 @@ hds_fnc_miradors               = compile preprocessFile "hdssystem\fonctions\mir
 // Voitures civiles vides garees le long des rues d'une agglomeration.
 hds_fnc_voituresGarees         = compile preprocessFile "hdssystem\fonctions\voitures-garees.sqf";
 
+// Trafic routier civil : le script d'Engima, recupere dans
+// l'historique du depot. Il tient ses vehicules dans le voisinage
+// immediat des joueurs, ce que mon remplacement ne savait pas faire.
+// Seul son ConfigAndStart.sqf a ete adapte, pour prendre ses classes
+// dans le registre de factions.
+fnc_engima_traffic             = compile preprocessFile "engima\traffic\init.sqf";
+
 // ─── Renforts alliés : la partie CLIENT ───
 // Ces trois fonctions tournent sur le client (carte, actions, chat).
 // Elles étaient compilées dans modules\occupations\h-init.sqf, qui n'est

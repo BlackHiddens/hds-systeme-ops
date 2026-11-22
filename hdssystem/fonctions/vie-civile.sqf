@@ -1,64 +1,63 @@
 /*
  * fnc_hds_vie_civile
  * ─────────────────────────────────────────────────────────────
- * Vie civile entretenue AUTOUR DES JOUEURS : du trafic sur les routes
- * et de la population dans les agglomérations proches, rien ailleurs.
+ * Vie civile : les habitants des agglomérations proches et les voitures
+ * garées le long des rues. Le trafic routier, lui, est confié au script
+ * d'Engima.
  *
- * 0 : <NUMBER> densité : véhicules en circulation autour des joueurs
+ * 0 : <NUMBER> densité (habitants, et compte de départ du trafic)
  * 1 : <BOOL>   peupler aussi les agglomérations proches
  * 2 : <ARRAY>  types de localisation à peupler
- * 3 : <NUMBER> distance d'apparition minimale (m)
- * 4 : <NUMBER> distance d'apparition maximale (m)
- * 5 : <NUMBER> distance d'oubli : au-delà, on supprime (m).
- *              1400 par défaut : à 900 m, en roulant, on
- *              supprimait derrière soi plus vite qu'on ne
- *              créait devant.
+ * 3 : <NUMBER> conservé pour les anciens appels, sans effet
+ * 4 : <NUMBER> distance d'approche d'une agglomération (m)
+ * 5 : <NUMBER> distance d'oubli des habitants (m)
  *
  * À lancer avec spawn :
  *   [] spawn fnc_hds_vie_civile;
- *   [15, true, ["NameCity"]] spawn fnc_hds_vie_civile;
  *
  * ─────────────────────────────────────────────────────────────
- * ── Ce que la version précédente faisait de travers ──
- * Elle posait douze véhicules sur des routes tirées au hasard SUR
- * TOUTE LA CARTE, une fois pour toutes, sans jamais rien supprimer.
- * Conséquence : les routes étaient vides là où les joueurs se
- * trouvaient, et douze véhicules tournaient dans le vide ailleurs.
+ * ── Le trafic, c'est Engima, et c'est un retour en arrière assumé ──
+ * J'avais remplacé son script par du code maison, au motif qu'il
+ * n'était pas dans le dossier de mission. Il était en fait dans
+ * l'historique du dépôt, d'où il a été récupéré.
  *
- * C'est une régression de ma part. En remplaçant le script d'Engima
- * par du code maison, j'ai repris ce qu'il produisait — des voitures
- * qui roulent — sans reprendre ce qui comptait vraiment : il les
- * entretenait dans un anneau autour des joueurs et supprimait celles
- * qui s'éloignaient. Les réglages d'origine, retrouvés dans
- * l'historique du dépôt, étaient MIN_SPAWN_DISTANCE 300,
- * MAX_SPAWN_DISTANCE 500, VEHICLES_COUNT 5.
+ * Après plusieurs tentatives, mon remplacement restait nettement moins
+ * bon : routes vides, véhicules qui manœuvrent sur place. Ce que son
+ * script fait et que je n'avais pas reproduit :
  *
- * ── Le principe, donc ──
- * Un seul cycle, toutes les huit secondes :
+ *   - il entretient ses véhicules DANS le voisinage immédiat du joueur
+ *     et supprime tout ce qui dépasse sa distance d'apparition ;
+ *   - il vise un point en avant du joueur, pas un cercle autour ;
+ *   - il connaît les tronçons de bord de carte et les coins ;
+ *   - il surveille les véhicules immobiles depuis plus d'une minute
+ *     pour les reprendre.
  *
- *   1. OUBLI    tout civil d'ambiance dont le joueur le plus proche
- *               est au-delà de la distance d'oubli est supprimé, lui
- *               et son véhicule. Plus personne connecté : on vide.
+ * C'est des années de mise au point. Je n'allais pas les refaire en une
+ * journée, et il n'y avait aucune raison d'essayer.
+ *
+ * Seul changement apporté à son code : sa liste de véhicules vient du
+ * registre de factions au lieu d'une liste de classnames codée en dur
+ * qui n'existe plus. Voir engima/Traffic/ConfigAndStart.sqf.
+ *
+ * ── Ce que cette fonction garde ──
+ * Les habitants et les voitures garées, entretenus autour des joueurs
+ * par un cycle de huit secondes :
+ *
+ *   1. OUBLI    tout civil d'ambiance dont le joueur le plus proche est
+ *               au-delà de la distance d'oubli est supprimé. Plus
+ *               personne connecté : on vide.
  *   2. PEUPLER  une agglomération dont un joueur s'approche reçoit sa
- *               population ; désertée, elle est oubliée par l'étape 1
- *               et se repeuplera à la prochaine visite.
- *   3. TRAFIC   on complète jusqu'à la densité voulue, en faisant
- *               apparaître sur une route de l'anneau [min, max] autour
- *               d'un joueur tiré au sort. Assez loin pour qu'on ne
- *               voie rien apparaître, assez près pour que la route
- *               soit vivante là où on roule.
+ *               population. On regarde ce qui reste réellement sur
+ *               place, pas un drapeau : une ville qu'on traverse se vide
+ *               derrière soi et doit se repeupler.
+ *   3. GARER    des voitures vides le long des rues habitées,
+ *               complétées au fil des passages.
  *
- * Seuls les civils marqués « hds_civil_ambiance » sont concernés. Un
- * otage, un VIP ou un civil posé par une mission ne porte pas cette
- * marque et ne sera jamais supprimé par ce balayage.
+ * Seuls les civils marqués « hds_civil_ambiance » sont balayés. Un
+ * otage, un VIP, un civil posé par une mission, et les véhicules
+ * d'Engima — qui gère les siens — ne portent pas cette marque.
  *
- * ── Les réglages ──
- * La densité se règle en jeu : Échap → Options → Options des addons →
- * HDS → « Densité du trafic civil ». Elle est relue à chaque cycle,
- * donc elle s'applique tout de suite. Le paramètre 0 de cette fonction
- * ne sert plus que de valeur de départ.
- *
- * Et « Population civile » décoché arrête tout, y compris le trafic.
+ * Le réglage CBA « Population civile » décoché arrête tout.
  */
 
 if (!isServer) exitWith {};
@@ -67,11 +66,9 @@ params [
     ["_densite",          8],
     ["_peupler",          true],
     ["_typeLocalisation", ["NameCity", "NameVillage"]],
-    ["_distanceMin",      300],
-    ["_distanceMax",      500],
-    ["_distanceOubli",    1400],
-    ["_distancePresence", 600],
-    ["_distanceTrafic",   900]
+    ["_inutilise",        300],
+    ["_distanceApproche", 500],
+    ["_distanceOubli",    1400]
 ];
 
 if (!canSuspend) exitWith {
@@ -83,42 +80,39 @@ if (!canSuspend) exitWith {
 if (!hds_factions_pret) then { waitUntil { hds_factions_pret } };
 
 // ─── Une seule faction civile, pour tout ───
-// Les véhicules et les hommes étaient demandés séparément, et les deux
-// fonctions ne résolvent pas la faction de la même façon :
-// hds_fnc_factionVehicules passe par hds_fnc_factionResoudre, pendant
-// que hds_fnc_factionHommes se contente du camp et prend la première
-// faction civile venue. Résultat, le chauffeur et sa voiture pouvaient
-// sortir de deux populations différentes.
-//
-// On résout donc UNE fois, et on sert tout le monde avec le même id :
-// les voitures, les chauffeurs, et les habitants des agglomérations.
+// Les habitants, les voitures garées et le trafic d'Engima tirent leurs
+// classes du même id : une ville dont les passants et les automobilistes
+// ne sont pas du même peuple, ça se remarque.
 ([civilian] call hds_fnc_factionResoudre) params ["_idCiv", "_sideCiv"];
 
-private _classesVeh = [_idCiv, "LEGER"] call hds_fnc_factionVehicules;
 private _classesHom = [_idCiv] call hds_fnc_factionHommes;
 
 ["INFO", "CIVILS", format [
-    "population civile retenue : %1 - %2 vehicule(s), %3 homme(s)",
-    (["aucune", _idCiv] select (_idCiv != "")),
-    count _classesVeh, count _classesHom
+    "population civile retenue : %1 - %2 homme(s) dans le registre",
+    (["aucune", _idCiv] select (_idCiv != "")), count _classesHom
 ]] call hds_fnc_log;
 
-if (_classesVeh isEqualTo [] || { _classesHom isEqualTo [] }) exitWith {
-    ["ALERTE", "CIVILS", format [
-        "pas de vie civile : %1 vehicule(s) et %2 homme(s) civils dans le registre",
-        count _classesVeh, count _classesHom
-    ]] call hds_fnc_log;
-};
-
-// Valeur de départ du réglage en jeu, si le menu CBA ne l'a pas encore
-// posée (API changée, réglage pas encore reçu du serveur).
 if (isNil "hds_civils_densite") then { hds_civils_densite = _densite };
-if (isNil "hds_civils_portee")  then { hds_civils_portee  = _distanceMax };
+if (isNil "hds_civils_portee")  then { hds_civils_portee  = _distanceApproche };
+
+// ═══════════════════════════════════════════════════════════
+// LE TRAFIC : ON PASSE LA MAIN
+// ═══════════════════════════════════════════════════════════
+if (missionNamespace getVariable ["hds_civils_actifs", true]) then {
+    if (isNil "fnc_engima_traffic") then {
+        ["ALERTE", "CIVILS",
+         "trafic : le script Engima n'est pas charge - aucune circulation"
+        ] call hds_fnc_log;
+    } else {
+        [] spawn fnc_engima_traffic;
+    };
+};
 
 // ═══════════════════════════════════════════════════════════
 // LES AGGLOMÉRATIONS, RELEVÉES UNE SEULE FOIS
 // ═══════════════════════════════════════════════════════════
-// [centre, rayon, peuplée ?]
+// [centre, rayon, peuplée, routes bordées de maisons (-1 inconnu),
+//  instant avant lequel on ne repeuple pas]
 private _lieux = [];
 
 if (_peupler) then {
@@ -131,8 +125,6 @@ if (_peupler) then {
             _taille = ((((_dim select 0) max (_dim select 1)) * 2) max 150) min 600;
         };
 
-        // [centre, rayon, peuplee, routes bordees de maisons (-1 inconnu),
-        //  instant avant lequel on ne repeuple pas]
         _lieux pushBack [locationPosition _x, _taille, false, -1, 0];
     } forEach (nearestLocations [
         [worldSize / 2, worldSize / 2, 0], _typeLocalisation, worldSize
@@ -174,36 +166,7 @@ private _fnSupprimer = {
     };
 };
 
-// Des joueurs éloignés les uns des autres jouent chacun de leur côté :
-// chacun doit avoir son ambiance, pas se partager un quota commun.
-// Une passe simple suffit — on n'a pas besoin d'un vrai partitionnement,
-// seulement de savoir qui est avec qui.
-private _fnGrappes = {
-    params ["_joueurs", "_rayon"];
-
-    private _grappes = [];
-
-    {
-        private _j = _x;
-        private _place = false;
-
-        {
-            if (!_place && { (_j distance2D (_x select 0)) < _rayon }) then {
-                (_x select 1) pushBack _j;
-                _place = true;
-            };
-        } forEach _grappes;
-
-        if (!_place) then { _grappes pushBack [getPosATL _j, [_j]] };
-    } forEach _joueurs;
-
-    _grappes
-};
-
-// Plus dense en ville qu'à la campagne. « Un trafic correct sur les
-// routes isolées et départementales, plus dense sur les agglomérations,
-// sans en faire trop pour les petites villes » : d'où une ville qui
-// double la densité, un village qui l'augmente de moitié seulement.
+// Plus peuplé en ville qu'à la campagne.
 private _fnFacteur = {
     params ["_pos"];
 
@@ -220,135 +183,21 @@ private _fnFacteur = {
     _f
 };
 
-// Une position de route dans l'anneau autour d'une grappe. L'anneau se
-// mesure sur la grappe, mais la distance minimale vaut pour TOUS les
-// joueurs : rien n'apparaît sous le nez de quelqu'un d'autre.
-private _fnRouteAutour = {
-    params ["_autour", "_min", "_max", "_tous"];
-
-    private _trouve = [];
-
-    for "_essai" from 1 to 12 do {
-        private _ancre = selectRandom _autour;
-
-        // ── Faire apparaître DEVANT, pas tout autour ──
-        // Engima ne semait pas au hasard : il visait un point en avant
-        // du joueur. C'est ce qui fait qu'on croise des voitures au lieu
-        // d'en deviner derrière soi. Deux fois sur trois on reste dans
-        // un cône de ±55° autour de son cap, le reste au hasard pour que
-        // les routes latérales ne soient pas mortes.
-        private _angle = if ((random 1) < 0.67) then {
-            (getDir _ancre) - 55 + random 110
-        } else {
-            random 360
-        };
-
-        private _d = _min + random (_max - _min);
-
-        private _p = [
-            (getPosATL _ancre select 0) + _d * sin _angle,
-            (getPosATL _ancre select 1) + _d * cos _angle,
-            0
-        ];
-
-        private _routes = _p nearRoads 200;
-
-        if !(_routes isEqualTo []) then {
-            private _r = getPos (selectRandom _routes);
-            // Jamais plus près que le minimum d'un joueur, même si la
-            // route trouvée revient vers lui — et ça vaut pour tous les
-            // joueurs, pas seulement ceux de la grappe visée.
-            if ([_r, _tous, _min] call _fnLoin) then { _trouve = _r };
-        };
-
-        if !(_trouve isEqualTo []) exitWith {};
-    };
-
-    _trouve
-};
-
-// Un itinéraire qui SUIT la route, au lieu de points tirés au hasard.
-//
-// La version précédente prenait trois routes au hasard dans un rayon de
-// 400 à 1300 m autour du départ. Rien ne garantissait qu'elles soient
-// dans le même sens : l'étape 1 pouvait être derrière, l'étape 2 devant,
-// l'étape 3 derrière à nouveau. Le véhicule passait son temps à faire
-// demi-tour — c'est ça, la conduite erratique.
-//
-// Ici on part du tronçon de départ et on avance de voisin en voisin,
-// sans jamais revenir sur celui d'où l'on vient. Tous les quatorze
-// tronçons, on pose une étape. Le trajet est continu et suit vraiment
-// le réseau, donc le véhicule a toujours sa route devant lui.
-private _fnItineraire = {
-    params ["_debut", "_nbEtapes"];
-
-    private _points = [];
-    private _routes = _debut nearRoads 30;
-
-    if (_routes isEqualTo []) exitWith { _points };
-
-    private _courant   = _routes select 0;
-    private _precedent = objNull;
-    private _pas = 0;
-    private _max = _nbEtapes * 16;
-
-    while { _pas < _max && { (count _points) < _nbEtapes } } do {
-
-        private _voisins = (roadsConnectedTo _courant) select {
-            !(_x isEqualTo _precedent)
-        };
-
-        // Cul-de-sac : on s'arrête là, le CYCLE ramènera le véhicule.
-        if (_voisins isEqualTo []) exitWith {};
-
-        _precedent = _courant;
-        _courant   = selectRandom _voisins;
-        _pas = _pas + 1;
-
-        if ((_pas % 14) isEqualTo 0) then { _points pushBack (getPos _courant) };
-    };
-
-    _points
-};
-
-["INFO", "CIVILS", format [
-    "vie civile en service - portee reglable (menu CBA), %1 m au demarrage ; habitants oublies a %2 m",
-    _distanceMax, _distanceOubli
-]] call hds_fnc_log;
-
 // ═══════════════════════════════════════════════════════════
-// LE CYCLE
+// LE CYCLE : HABITANTS ET VOITURES GARÉES
 // ═══════════════════════════════════════════════════════════
 while {true} do {
 
-    private _actif  = missionNamespace getVariable ["hds_civils_actifs", true];
-    private _voulu  = round (missionNamespace getVariable ["hds_civils_densite", _densite]);
+    private _actif   = missionNamespace getVariable ["hds_civils_actifs", true];
+    private _voulu   = round (missionNamespace getVariable ["hds_civils_densite", _densite]);
     private _joueurs = allPlayers select {
         alive _x && { !(_x isKindOf "HeadlessClient_F") }
     };
 
-    // ─── Une seule distance a regler, le reste en decoule ───
-    // Chez Engima c'etait MIN_SPAWN_DISTANCE / MAX_SPAWN_DISTANCE, et
-    // elles se modifiaient dans le fichier de config. Ici c'est un
-    // curseur du menu CBA, relu a chaque cycle : le changement prend
-    // effet en cinq secondes, sans relancer la mission.
-    //
-    //   portee        la distance maximale d'apparition
-    //   x 0.6         la minimale : assez loin pour ne rien voir naitre
-    //   + 100         le rayon ou le quota est compte
-    //   x 1.8         au-dela, le vehicule est oublie
-    private _portee = round (missionNamespace getVariable ["hds_civils_portee", _distanceMax]);
-    if (_portee < 120) then { _portee = 120 };
-
-    private _dMin  = round (_portee * 0.6);
-    private _dMax  = _portee;
-    private _dPres = _portee + 100;
-    private _dTraf = round (_portee * 1.8);
+    private _approche = round (missionNamespace getVariable ["hds_civils_portee", _distanceApproche]);
+    if (_approche < 120) then { _approche = 120 };
 
     // ─── 1. OUBLI ───
-    // Réglage décoché, ou plus personne connecté : on vide tout. C'est
-    // là que l'économie est maximale, et c'est le cas d'un serveur qui
-    // tourne la nuit sans joueurs.
     if (!_actif || { _joueurs isEqualTo [] }) then {
 
         private _ambiance = call _fnAmbiance;
@@ -367,30 +216,8 @@ while {true} do {
     } else {
 
         {
-            private _o = _x;
-
-            // ── Deux distances, et c'est tout le problème ──
-            // Un véhicule qui roule est entretenu bien plus serré que
-            // les habitants. Engima supprimait tout ce qui dépassait sa
-            // distance d'apparition maximale, soit 500 m : c'est ce qui
-            // fait qu'on croise toujours quelqu'un, parce que le quota
-            // est maintenu DANS le voisinage immédiat.
-            //
-            // Avec une seule distance à 1400 m, huit voitures se
-            // répartissaient sur un rayon d'un kilomètre et demi — des
-            // routes vides, exactement ce qui se voyait en jeu. Les
-            // habitants, eux, gardent la distance large : une ville qu'on
-            // traverse ne doit pas se vider derrière soi.
-            private _roulant = if (_o isKindOf "Man") then {
-                !((vehicle _o) isEqualTo _o)
-            } else {
-                !((crew _o) isEqualTo [])
-            };
-
-            private _limite = if (_roulant) then { _dTraf } else { _distanceOubli };
-
-            if ([_o, _joueurs, _limite] call _fnLoin) then {
-                [_o] call _fnSupprimer;
+            if ([_x, _joueurs, _distanceOubli] call _fnLoin) then {
+                [_x] call _fnSupprimer;
             };
         } forEach (call _fnAmbiance);
 
@@ -406,7 +233,7 @@ while {true} do {
             private _lieu = _x;
             _lieu params ["_centre", "_taille", "_peuplee", "_routesOk", "_prochain"];
 
-            private _procheAssez = !([_centre, _joueurs, _taille + _dMax] call _fnLoin);
+            private _procheAssez = !([_centre, _joueurs, _taille + _approche] call _fnLoin);
             private _desertee    =  [_centre, _joueurs, _taille + _distanceOubli] call _fnLoin;
 
             if (_procheAssez) then {
@@ -418,26 +245,14 @@ while {true} do {
                     && { (_x distance2D _centre) < (_taille + 60) }
                 };
 
-                // ── Le défaut qui vidait les villes ──
-                // Le drapeau « peuplée » restait vrai alors que le
-                // balayage avait retiré ses habitants au fur et à mesure
-                // qu'on les dépassait. La ville ne se repeuplait qu'après
-                // un éloignement complet : en la traversant en voiture,
-                // on la vidait sans jamais rien faire réapparaître.
-                //
-                // On regarde donc ce qui reste sur place, pas un drapeau.
-                // Le délai évite de relancer le peuplement à chaque cycle
-                // quand il échoue pour une autre raison.
+                // Une ville qu'on traverse se vide derrière soi : le
+                // balayage retire ses habitants au fur et à mesure qu'on
+                // les dépasse. On regarde donc ce qui reste sur place,
+                // pas un drapeau posé une fois pour toutes.
                 if ((!_peuplee || { (count _habitants) < 5 }) && { time >= _prochain }) then {
 
-                    // Le nombre d'habitants était déduit des seules
-                    // maisons, ratio codé en dur. Le facteur du lieu s'y
-                    // ajoute, proportionnellement à la densité demandée.
                     private _plus = round (_voulu * (([_centre] call _fnFacteur) - 1) / 2);
 
-                    // Même population que les chauffeurs : une ville dont
-                    // les habitants et les automobilistes ne sont pas du
-                    // même peuple, ça ne va pas.
                     [_centre, _plus, _taille, _idCiv, false] spawn fnc_occupations_civil_init;
 
                     _lieu set [2, true];
@@ -451,15 +266,10 @@ while {true} do {
                     ]] call hds_fnc_log;
                 };
 
-                // ── Voitures garées ──
-                // Elles portent la même marque que le reste et se font
-                // balayer de la même façon : on complète à chaque
-                // passage, trois par cycle pour étaler le coût.
-                //
+                // ─── 3. VOITURES GARÉES ───
                 // _routesOk retient s'il y a seulement des routes bordées
-                // de maisons ici. Sans ça, un village qui n'en a aucune
-                // relançait le calcul toutes les huit secondes, pour
-                // rien, en écrivant une ligne de journal à chaque fois.
+                // de maisons ici : sans ça, un village qui n'en a aucune
+                // relançait un nearRoads complet à chaque cycle.
                 if (_routesOk != 0) then {
 
                     if (_routesOk < 0) then {
@@ -468,13 +278,6 @@ while {true} do {
                         };
                         _routesOk = [0, 1] select ((count _rh) > 0);
                         _lieu set [3, _routesOk];
-
-                        if (_routesOk isEqualTo 0) then {
-                            ["INFO", "CIVILS", format [
-                                "pas de route bordee de maisons a [%1,%2] - aucune voiture garee ici, on n'y revient plus",
-                                round (_centre select 0), round (_centre select 1)
-                            ]] call hds_fnc_log;
-                        };
                     };
 
                     if (_routesOk isEqualTo 1) then {
@@ -498,168 +301,11 @@ while {true} do {
                 };
             };
 
-            // Désertée : on oublie, elle se repeuplera à la prochaine
-            // visite.
+            // Désertée : elle se repeuplera à la prochaine visite.
             if (_desertee && { _peuplee }) then { _lieu set [2, false] };
 
         } forEach _lieux;
-
-        // ─── 3. COMPLÉTER LE TRAFIC, GRAPPE PAR GRAPPE ───
-        // Deux équipes qui opèrent à dix kilomètres l'une de l'autre ne
-        // se partagent pas un quota : chacune a le sien. Sinon la
-        // seconde roule sur des routes désertes pendant que la première
-        // a tout le trafic.
-        private _grappes = [_joueurs, 1200] call _fnGrappes;
-
-        {
-            _x params ["_ancre", "_equipe"];
-
-            private _cible = round (_voulu * ([_ancre] call _fnFacteur));
-
-            // On compte PRÈS, et on supprime loin. Compter sur la
-            // distance d'oubli revenait à considérer comme « du trafic »
-            // une voiture à un kilomètre, invisible depuis la route.
-            private _ici = vehicles select {
-                _x getVariable ["hds_civil_ambiance", false]
-                && { alive _x }
-                && { !((crew _x) isEqualTo []) }
-                && { (_x distance2D _ancre) < _dPres }
-            };
-
-            private _manque = _cible - (count _ici);
-
-            // Six par cycle au plus. C'était trois, et avec une cible
-            // triplée en ville il fallait près d'une minute pour remplir
-            // les rues — d'où un trafic urbain qui paraissait misérable
-            // alors qu'il montait seulement trop lentement.
-            // Le trafic n'écrivait rien : impossible de dire, en lisant
-            // le journal, s'il y avait deux voitures parce que le
-            // système n'en voulait que deux, ou parce qu'il n'arrivait
-            // pas à les poser. On compte les deux.
-            private _nes = 0;
-            private _sansRoute = 0;
-
-            if (_manque > 0) then {
-                for "_i" from 1 to (_manque min 8) do {
-
-                private _depart = [_equipe, _dMin, _dMax, _joueurs] call _fnRouteAutour;
-
-                if (_depart isEqualTo []) then { _sansRoute = _sansRoute + 1 };
-
-                if !(_depart isEqualTo []) then {
-
-                    private _veh = createVehicle [
-                        selectRandom _classesVeh, _depart, [], 0, "NONE"
-                    ];
-
-                    if (!isNull _veh) then {
-                        // L'orientation est posée plus bas, une fois
-                        // l'itinéraire connu : on la veut dans l'axe de
-                        // la route, pas au hasard.
-                        _veh setVariable ["hds_civil_ambiance", true, true];
-
-                        private _grp = createGroup [civilian, true];
-                        private _chauffeur = _grp createUnit [
-                            selectRandom _classesHom, _depart, [], 0, "NONE"
-                        ];
-
-                        if (isNull _chauffeur) then {
-                            private _n = (units _grp);
-                            if !(_n isEqualTo []) then { _chauffeur = _n select 0 };
-                        };
-
-                        if (isNull _chauffeur) then {
-                            deleteVehicle _veh;
-                        } else {
-                            _chauffeur setVariable ["hds_civil_ambiance", true, true];
-                            _chauffeur moveInDriver _veh;
-
-                            // Les étapes sont sur route, mais entre deux
-                            // points le moteur coupe au plus court s'il
-                            // y trouve son compte. Un taxi civil qui
-                            // traverse un bois, non.
-                            if (isOnRoad (getPosATL _veh)) then {
-                                _veh forceFollowRoad true;
-                            };
-
-                            // Un trajet qui suit le réseau routier.
-                            // Deux etapes, pas quatre : avec un long
-                            // trajet la voiture quittait le secteur
-                            // et se faisait supprimer avant meme
-                            // d'avoir ete croisee. Courte boucle,
-                            // elle tourne dans le coin.
-                            private _etapes = [_depart, 2] call _fnItineraire;
-
-                            if (_etapes isEqualTo []) then { _etapes = [_depart] };
-
-                            {
-                                private _wp = _grp addWaypoint [_x, 25];
-                                _wp setWaypointType             "MOVE";
-                                _wp setWaypointBehaviour        "CARELESS";
-                                _wp setWaypointSpeed            "LIMITED";
-                                _wp setWaypointCombatMode       "BLUE";
-                                _wp setWaypointCompletionRadius 20;
-                            } forEach _etapes;
-
-                            private _cycle = _grp addWaypoint [_depart, 25];
-                            _cycle setWaypointType             "CYCLE";
-                            _cycle setWaypointCompletionRadius 20;
-
-                            _grp setBehaviour  "CARELESS";
-                            _grp setSpeedMode  "LIMITED";
-                            _grp setCombatMode "BLUE";
-
-                            // Orientée vers sa première étape. Elle
-                            // apparaissait avec un cap au hasard, donc
-                            // souvent en travers de la chaussée, et
-                            // commençait par une manœuvre en trois
-                            // temps au milieu de la route.
-                            private _cible = _etapes select 0;
-                            private _dx = (_cible select 0) - (_depart select 0);
-                            private _dy = (_cible select 1) - (_depart select 1);
-
-                            // Pas d'étape exploitable : on s'aligne au
-                            // moins sur l'axe du tronçon de départ.
-                            if ((_dx * _dx + _dy * _dy) <= 1) then {
-                                private _r = _depart nearRoads 30;
-                                if !(_r isEqualTo []) then {
-                                    private _v = roadsConnectedTo (_r select 0);
-                                    if !(_v isEqualTo []) then {
-                                        private _p = getPos (_v select 0);
-                                        _dx = (_p select 0) - (_depart select 0);
-                                        _dy = (_p select 1) - (_depart select 1);
-                                    };
-                                };
-                            };
-
-                            if ((_dx * _dx + _dy * _dy) > 1) then {
-                                _veh setDir (((_dx atan2 _dy) + 360) % 360);
-                                _veh setVectorUp (surfaceNormal (getPosATL _veh));
-                            };
-
-                            _grp enableDynamicSimulation true;
-                            _veh enableDynamicSimulation true;
-
-                            _nes = _nes + 1;
-                        };
-                    };
-                };
-
-                sleep 0.3;
-                };
-            };
-
-            if (_nes > 0 || { _sansRoute > 0 }) then {
-                ["INFO", "CIVILS", format [
-                    "trafic : %1 en circulation sur %2 vises (densite %3 x facteur lieu) - %4 cree(s) ce cycle, %5 sans route trouvee",
-                    count _ici, _cible, _voulu, _nes, _sansRoute
-                ]] call hds_fnc_log;
-            };
-
-        } forEach _grappes;
     };
 
-    // Cinq secondes plutot que huit : a 60 km/h on parcourt 80 m
-    // entre deux passages, et le trafic suit mieux le joueur.
-    sleep 5;
+    sleep 8;
 };
