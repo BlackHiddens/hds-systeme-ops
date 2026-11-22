@@ -9,7 +9,10 @@
  * 2 : <ARRAY>  types de localisation à peupler
  * 3 : <NUMBER> distance d'apparition minimale (m)
  * 4 : <NUMBER> distance d'apparition maximale (m)
- * 5 : <NUMBER> distance d'oubli : au-delà, on supprime (m)
+ * 5 : <NUMBER> distance d'oubli : au-delà, on supprime (m).
+ *              1400 par défaut : à 900 m, en roulant, on
+ *              supprimait derrière soi plus vite qu'on ne
+ *              créait devant.
  *
  * À lancer avec spawn :
  *   [] spawn fnc_hds_vie_civile;
@@ -66,7 +69,7 @@ params [
     ["_typeLocalisation", ["NameCity", "NameVillage"]],
     ["_distanceMin",      300],
     ["_distanceMax",      500],
-    ["_distanceOubli",    900]
+    ["_distanceOubli",    1400]
 ];
 
 if (!canSuspend) exitWith {
@@ -125,7 +128,9 @@ if (_peupler) then {
             _taille = ((((_dim select 0) max (_dim select 1)) * 2) max 150) min 600;
         };
 
-        _lieux pushBack [locationPosition _x, _taille, false];
+        // [centre, rayon, peuplee, routes bordees de maisons (-1 inconnu),
+        //  instant avant lequel on ne repeuple pas]
+        _lieux pushBack [locationPosition _x, _taille, false, -1, 0];
     } forEach (nearestLocations [
         [worldSize / 2, worldSize / 2, 0], _typeLocalisation, worldSize
     ]);
@@ -317,7 +322,7 @@ while {true} do {
 
         if !(_ambiance isEqualTo []) then {
             { [_x] call _fnSupprimer } forEach _ambiance;
-            { _x set [2, false] } forEach _lieux;
+            { _x set [2, false]; _x set [4, 0] } forEach _lieux;
 
             ["INFO", "CIVILS", format [
                 "%1 civil(s) d'ambiance retire(s) - %2",
@@ -341,67 +346,106 @@ while {true} do {
             };
         } forEach allGroups;
 
-        // ─── 2. PEUPLER CE DONT ON S'APPROCHE ───
+        // ─── 2. PEUPLER, ET SURTOUT REPEUPLER ───
         {
-            _x params ["_centre", "_taille", "_peuplee"];
+            private _lieu = _x;
+            _lieu params ["_centre", "_taille", "_peuplee", "_routesOk", "_prochain"];
 
             private _procheAssez = !([_centre, _joueurs, _taille + _distanceMax] call _fnLoin);
             private _desertee    =  [_centre, _joueurs, _taille + _distanceOubli] call _fnLoin;
 
-            if (_procheAssez && { !_peuplee }) then {
+            if (_procheAssez) then {
 
-                // Le nombre d'habitants était déduit des seules maisons,
-                // ratio codé en dur. Le facteur du lieu s'y ajoute
-                // maintenant, proportionnellement à la densité demandée :
-                // une ville est plus peuplée qu'un hameau, et le curseur
-                // du menu agit aussi sur les habitants, pas seulement sur
-                // les voitures.
-                private _plus = round (_voulu * (([_centre] call _fnFacteur) - 1) / 2);
-
-                // Même population que les chauffeurs : une ville dont
-                // les habitants et les automobilistes ne sont pas du
-                // même peuple, ça ne va pas.
-                [_centre, _plus, _taille, _idCiv, false] spawn fnc_occupations_civil_init;
-
-                // Des voitures vides garées le long des rues : c'est ce
-                // qui fait qu'une ville a l'air habitée même quand ses
-                // habitants sont rentrés chez eux.
-                [_centre, _taille, -1, _idCiv] spawn hds_fnc_voituresGarees;
-
-                _x set [2, true];
-
-                ["INFO", "CIVILS", format [
-                    "agglomeration peuplee a l'approche - [%1,%2] r=%3",
-                    round (_centre select 0), round (_centre select 1), _taille
-                ]] call hds_fnc_log;
-            };
-
-            // Les voitures garées portent la même marque que le reste :
-            // le balayage les retire dès qu'on s'éloigne du quartier, et
-            // rien ne les remplaçait. En traversant une ville, on en
-            // voyait donc une au début et plus rien ensuite. On complète
-            // à chaque passage, trois par cycle pour étaler le coût.
-            if (_peuplee && _procheAssez) then {
-
-                private _cibleGarees = ((round (_taille / 60)) max 2) min 14;
-
-                private _garees = vehicles select {
+                // Combien d'habitants d'ambiance restent réellement là.
+                private _habitants = allUnits select {
                     _x getVariable ["hds_civil_ambiance", false]
                     && { alive _x }
-                    && { (crew _x) isEqualTo [] }
-                    && { (_x distance2D _centre) < (_taille + 50) }
+                    && { (_x distance2D _centre) < (_taille + 60) }
                 };
 
-                private _manqueGarees = _cibleGarees - (count _garees);
+                // ── Le défaut qui vidait les villes ──
+                // Le drapeau « peuplée » restait vrai alors que le
+                // balayage avait retiré ses habitants au fur et à mesure
+                // qu'on les dépassait. La ville ne se repeuplait qu'après
+                // un éloignement complet : en la traversant en voiture,
+                // on la vidait sans jamais rien faire réapparaître.
+                //
+                // On regarde donc ce qui reste sur place, pas un drapeau.
+                // Le délai évite de relancer le peuplement à chaque cycle
+                // quand il échoue pour une autre raison.
+                if ((!_peuplee || { (count _habitants) < 5 }) && { time >= _prochain }) then {
 
-                if (_manqueGarees > 0) then {
-                    [_centre, _taille, _manqueGarees min 3, _idCiv] spawn hds_fnc_voituresGarees;
+                    // Le nombre d'habitants était déduit des seules
+                    // maisons, ratio codé en dur. Le facteur du lieu s'y
+                    // ajoute, proportionnellement à la densité demandée.
+                    private _plus = round (_voulu * (([_centre] call _fnFacteur) - 1) / 2);
+
+                    // Même population que les chauffeurs : une ville dont
+                    // les habitants et les automobilistes ne sont pas du
+                    // même peuple, ça ne va pas.
+                    [_centre, _plus, _taille, _idCiv, false] spawn fnc_occupations_civil_init;
+
+                    _lieu set [2, true];
+                    _lieu set [4, time + 45];
+
+                    ["INFO", "CIVILS", format [
+                        "agglomeration %1 - [%2,%3] r=%4, %5 habitant(s) encore sur place",
+                        (["peuplee", "repeuplee"] select _peuplee),
+                        round (_centre select 0), round (_centre select 1),
+                        round _taille, count _habitants
+                    ]] call hds_fnc_log;
+                };
+
+                // ── Voitures garées ──
+                // Elles portent la même marque que le reste et se font
+                // balayer de la même façon : on complète à chaque
+                // passage, trois par cycle pour étaler le coût.
+                //
+                // _routesOk retient s'il y a seulement des routes bordées
+                // de maisons ici. Sans ça, un village qui n'en a aucune
+                // relançait le calcul toutes les huit secondes, pour
+                // rien, en écrivant une ligne de journal à chaque fois.
+                if (_routesOk != 0) then {
+
+                    if (_routesOk < 0) then {
+                        private _rh = (_centre nearRoads _taille) select {
+                            (count (nearestObjects [getPos _x, ["House"], 60])) > 0
+                        };
+                        _routesOk = [0, 1] select ((count _rh) > 0);
+                        _lieu set [3, _routesOk];
+
+                        if (_routesOk isEqualTo 0) then {
+                            ["INFO", "CIVILS", format [
+                                "pas de route bordee de maisons a [%1,%2] - aucune voiture garee ici, on n'y revient plus",
+                                round (_centre select 0), round (_centre select 1)
+                            ]] call hds_fnc_log;
+                        };
+                    };
+
+                    if (_routesOk isEqualTo 1) then {
+
+                        private _cibleGarees = ((round (_taille / 60)) max 2) min 14;
+
+                        private _garees = vehicles select {
+                            _x getVariable ["hds_civil_ambiance", false]
+                            && { alive _x }
+                            && { (crew _x) isEqualTo [] }
+                            && { (_x distance2D _centre) < (_taille + 50) }
+                        };
+
+                        private _manqueGarees = _cibleGarees - (count _garees);
+
+                        if (_manqueGarees > 0) then {
+                            [_centre, _taille, _manqueGarees min 3, _idCiv]
+                                spawn hds_fnc_voituresGarees;
+                        };
+                    };
                 };
             };
 
-            // Désertée : l'étape 1 a déjà retiré ses habitants, on note
-            // seulement qu'elle est à repeupler à la prochaine visite.
-            if (_desertee && { _peuplee }) then { _x set [2, false] };
+            // Désertée : on oublie, elle se repeuplera à la prochaine
+            // visite.
+            if (_desertee && { _peuplee }) then { _lieu set [2, false] };
 
         } forEach _lieux;
 
@@ -430,10 +474,19 @@ while {true} do {
             // triplée en ville il fallait près d'une minute pour remplir
             // les rues — d'où un trafic urbain qui paraissait misérable
             // alors qu'il montait seulement trop lentement.
+            // Le trafic n'écrivait rien : impossible de dire, en lisant
+            // le journal, s'il y avait deux voitures parce que le
+            // système n'en voulait que deux, ou parce qu'il n'arrivait
+            // pas à les poser. On compte les deux.
+            private _nes = 0;
+            private _sansRoute = 0;
+
             if (_manque > 0) then {
                 for "_i" from 1 to (_manque min 6) do {
 
                 private _depart = [_equipe, _distanceMin, _distanceMax, _joueurs] call _fnRouteAutour;
+
+                if (_depart isEqualTo []) then { _sansRoute = _sansRoute + 1 };
 
                 if !(_depart isEqualTo []) then {
 
@@ -523,12 +576,21 @@ while {true} do {
 
                             _grp enableDynamicSimulation true;
                             _veh enableDynamicSimulation true;
+
+                            _nes = _nes + 1;
                         };
                     };
                 };
 
                 sleep 0.3;
                 };
+            };
+
+            if (_nes > 0 || { _sansRoute > 0 }) then {
+                ["INFO", "CIVILS", format [
+                    "trafic : %1 en circulation sur %2 vises (densite %3 x facteur lieu) - %4 cree(s) ce cycle, %5 sans route trouvee",
+                    count _ici, _cible, _voulu, _nes, _sansRoute
+                ]] call hds_fnc_log;
             };
 
         } forEach _grappes;
