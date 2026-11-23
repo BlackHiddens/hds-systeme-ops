@@ -49,6 +49,10 @@ c'est le système qui a un défaut.
                                    de formulaires ou d'une phrase en
                                    français.
 
+Son bouton « Guide » répond aux questions d'installation : quels
+dossiers copier, lesquels ne jamais ouvrir, les mods nécessaires, et
+quoi faire quand ça ne démarre pas. À lire en premier.
+
 
 LES MODULES
 -----------
