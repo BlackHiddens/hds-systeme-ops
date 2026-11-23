@@ -1,57 +1,48 @@
 /*
  * fnc_hds_vie_civile
  * ─────────────────────────────────────────────────────────────
- * Vie civile : les habitants des agglomérations proches et les voitures
- * garées le long des rues. Le trafic routier, lui, est confié au script
- * d'Engima.
+ * La vie civile SUIT LES JOUEURS. Partout où ils vont, s'il y a des
+ * maisons autour, il y a des habitants et des voitures garées. Ailleurs
+ * il n'y a rien, et rien ne tourne.
  *
- * 0 : <NUMBER> densité (habitants, et compte de départ du trafic)
- * 1 : <BOOL>   peupler aussi les agglomérations proches
- * 2 : <ARRAY>  types de localisation à peupler
- * 3 : <NUMBER> conservé pour les anciens appels, sans effet
- * 4 : <NUMBER> distance d'approche d'une agglomération (m)
+ * Le trafic routier est confié au script d'Engima, qui suit déjà les
+ * joueurs de la même façon.
+ *
+ * 0 : <NUMBER> densité (habitants ajoutés, et compte du trafic)
+ * 1 : <BOOL>   peupler les abords des joueurs
+ * 2 : <ARRAY>  conservé pour les anciens appels, sans effet
+ * 3 : <NUMBER> rayon d'ambiance autour d'un joueur (m)
+ * 4 : <NUMBER> conservé pour les anciens appels, sans effet
  * 5 : <NUMBER> distance d'oubli des habitants (m)
  *
  * À lancer avec spawn :
  *   [] spawn fnc_hds_vie_civile;
  *
  * ─────────────────────────────────────────────────────────────
- * ── Le trafic, c'est Engima, et c'est un retour en arrière assumé ──
- * J'avais remplacé son script par du code maison, au motif qu'il
- * n'était pas dans le dossier de mission. Il était en fait dans
- * l'historique du dépôt, d'où il a été récupéré.
+ * ── Pourquoi cette version est la bonne ──
+ * Les précédentes partaient des localisations déclarées par la carte :
+ * on relevait les NameCity et NameVillage, et on peuplait celles dont
+ * un joueur s'approchait.
  *
- * Après plusieurs tentatives, mon remplacement restait nettement moins
- * bon : routes vides, véhicules qui manœuvrent sur place. Ce que son
- * script fait et que je n'avais pas reproduit :
+ * Sur Stratis, les deux seules NameVillage sont au nord-ouest. En
+ * jouant au sud, on ne croisait donc strictement personne — et le
+ * système n'avait rien à se reprocher, il faisait exactement ce qu'on
+ * lui demandait. Le modèle était faux, pas le code.
  *
- *   - il entretient ses véhicules DANS le voisinage immédiat du joueur
- *     et supprime tout ce qui dépasse sa distance d'apparition ;
- *   - il vise un point en avant du joueur, pas un cercle autour ;
- *   - il connaît les tronçons de bord de carte et les coins ;
- *   - il surveille les véhicules immobiles depuis plus d'une minute
- *     pour les reprendre.
+ * Dépendre du nommage d'une carte, c'est dépendre de quelque chose
+ * qu'on ne maîtrise pas. On regarde maintenant une seule chose : y
+ * a-t-il des maisons autour du joueur ? Si oui, on peuple. Ça marche
+ * sur n'importe quelle carte, nommée ou non, y compris un hameau sans
+ * nom ou un camp militaire.
  *
- * C'est des années de mise au point. Je n'allais pas les refaire en une
- * journée, et il n'y avait aucune raison d'essayer.
- *
- * Seul changement apporté à son code : sa liste de véhicules vient du
- * registre de factions au lieu d'une liste de classnames codée en dur
- * qui n'existe plus. Voir engima/Traffic/ConfigAndStart.sqf.
- *
- * ── Ce que cette fonction garde ──
- * Les habitants et les voitures garées, entretenus autour des joueurs
- * par un cycle de huit secondes :
- *
+ * ── Le cycle, toutes les huit secondes ──
  *   1. OUBLI    tout civil d'ambiance dont le joueur le plus proche est
  *               au-delà de la distance d'oubli est supprimé. Plus
- *               personne connecté : on vide.
- *   2. PEUPLER  une agglomération dont un joueur s'approche reçoit sa
- *               population. On regarde ce qui reste réellement sur
- *               place, pas un drapeau : une ville qu'on traverse se vide
- *               derrière soi et doit se repeupler.
- *   3. GARER    des voitures vides le long des rues habitées,
- *               complétées au fil des passages.
+ *               personne connecté : on vide entièrement.
+ *   2. SUIVRE   pour chaque joueur : s'il y a assez de maisons autour
+ *               et pas assez de civils, on peuple sur place. Un délai
+ *               par secteur évite de recommencer à chaque passage.
+ *   3. GARER    des voitures vides le long des rues habitées.
  *
  * Seuls les civils marqués « hds_civil_ambiance » sont balayés. Un
  * otage, un VIP, un civil posé par une mission, et les véhicules
@@ -65,10 +56,10 @@ if (!isServer) exitWith {};
 params [
     ["_densite",          8],
     ["_peupler",          true],
-    ["_typeLocalisation", ["NameCity", "NameVillage"]],
-    ["_inutilise",        300],
-    ["_distanceApproche", 500],
-    ["_distanceOubli",    1400]
+    ["_inutilise1",       []],
+    ["_rayonAmbiance",    300],
+    ["_inutilise2",       500],
+    ["_distanceOubli",    1200]
 ];
 
 if (!canSuspend) exitWith {
@@ -80,9 +71,9 @@ if (!canSuspend) exitWith {
 if (!hds_factions_pret) then { waitUntil { hds_factions_pret } };
 
 // ─── Une seule faction civile, pour tout ───
-// Les habitants, les voitures garées et le trafic d'Engima tirent leurs
-// classes du même id : une ville dont les passants et les automobilistes
-// ne sont pas du même peuple, ça se remarque.
+// Habitants, voitures garées et trafic tirent leurs classes du même id :
+// une rue dont les passants et les automobilistes ne sont pas du même
+// peuple, ça se remarque.
 ([civilian] call hds_fnc_factionResoudre) params ["_idCiv", "_sideCiv"];
 
 private _classesHom = [_idCiv] call hds_fnc_factionHommes;
@@ -93,7 +84,6 @@ private _classesHom = [_idCiv] call hds_fnc_factionHommes;
 ]] call hds_fnc_log;
 
 if (isNil "hds_civils_densite") then { hds_civils_densite = _densite };
-if (isNil "hds_civils_portee")  then { hds_civils_portee  = _distanceApproche };
 
 // ═══════════════════════════════════════════════════════════
 // LE TRAFIC : ON PASSE LA MAIN
@@ -106,34 +96,6 @@ if (missionNamespace getVariable ["hds_civils_actifs", true]) then {
     } else {
         [] spawn fnc_engima_traffic;
     };
-};
-
-// ═══════════════════════════════════════════════════════════
-// LES AGGLOMÉRATIONS, RELEVÉES UNE SEULE FOIS
-// ═══════════════════════════════════════════════════════════
-// [centre, rayon, peuplée, routes bordées de maisons (-1 inconnu),
-//  instant avant lequel on ne repeuple pas]
-private _lieux = [];
-
-if (_peupler) then {
-    {
-        // « size » sur une Location rend un TABLEAU [x, y], pas un
-        // nombre : on prend le plus grand des deux côtés, borné.
-        private _dim = size _x;
-        private _taille = 300;
-        if (_dim isEqualType [] && { count _dim >= 2 }) then {
-            _taille = ((((_dim select 0) max (_dim select 1)) * 2) max 150) min 600;
-        };
-
-        _lieux pushBack [locationPosition _x, _taille, false, -1, 0];
-    } forEach (nearestLocations [
-        [worldSize / 2, worldSize / 2, 0], _typeLocalisation, worldSize
-    ]);
-
-    ["INFO", "CIVILS", format [
-        "%1 agglomeration(s) reperee(s) - peuplees a l'approche des joueurs",
-        count _lieux
-    ]] call hds_fnc_log;
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -166,25 +128,18 @@ private _fnSupprimer = {
     };
 };
 
-// Plus peuplé en ville qu'à la campagne.
-private _fnFacteur = {
-    params ["_pos"];
+// Secteurs déjà traités récemment : [position, instant de reprise].
+// Sans ça, un joueur immobile relancerait le peuplement toutes les huit
+// secondes au même endroit.
+private _recents = [];
 
-    private _f = 1;
-
-    if !((nearestLocations [_pos, ["NameCityCapital", "NameCity"], 500]) isEqualTo []) then {
-        _f = 3;
-    } else {
-        if !((nearestLocations [_pos, ["NameVillage"], 400]) isEqualTo []) then {
-            _f = 1.8;
-        };
-    };
-
-    _f
-};
+["INFO", "CIVILS", format [
+    "vie civile en service - ambiance dans %1 m autour des joueurs, oubli a %2 m",
+    _rayonAmbiance, _distanceOubli
+]] call hds_fnc_log;
 
 // ═══════════════════════════════════════════════════════════
-// LE CYCLE : HABITANTS ET VOITURES GARÉES
+// LE CYCLE
 // ═══════════════════════════════════════════════════════════
 while {true} do {
 
@@ -194,9 +149,6 @@ while {true} do {
         alive _x && { !(_x isKindOf "HeadlessClient_F") }
     };
 
-    private _approche = round (missionNamespace getVariable ["hds_civils_portee", _distanceApproche]);
-    if (_approche < 120) then { _approche = 120 };
-
     // ─── 1. OUBLI ───
     if (!_actif || { _joueurs isEqualTo [] }) then {
 
@@ -204,7 +156,7 @@ while {true} do {
 
         if !(_ambiance isEqualTo []) then {
             { [_x] call _fnSupprimer } forEach _ambiance;
-            { _x set [2, false]; _x set [4, 0] } forEach _lieux;
+            _recents = [];
 
             ["INFO", "CIVILS", format [
                 "%1 civil(s) d'ambiance retire(s) - %2",
@@ -228,83 +180,61 @@ while {true} do {
             };
         } forEach allGroups;
 
-        // ─── 2. PEUPLER, ET SURTOUT REPEUPLER ───
-        {
-            private _lieu = _x;
-            _lieu params ["_centre", "_taille", "_peuplee", "_routesOk", "_prochain"];
+        // Oublier les secteurs dont le délai est passé.
+        _recents = _recents select { (_x select 1) > time };
 
-            private _procheAssez = !([_centre, _joueurs, _taille + _approche] call _fnLoin);
-            private _desertee    =  [_centre, _joueurs, _taille + _distanceOubli] call _fnLoin;
+        // ─── 2. SUIVRE LES JOUEURS ───
+        if (_peupler) then {
+            {
+                private _p = getPosATL _x;
 
-            if (_procheAssez) then {
+                // Déjà traité il y a peu ?
+                private _recent = false;
+                {
+                    if ((_p distance2D (_x select 0)) < (_rayonAmbiance * 0.8)) exitWith {
+                        _recent = true;
+                    };
+                } forEach _recents;
 
-                // Combien d'habitants d'ambiance restent réellement là.
-                private _habitants = allUnits select {
-                    _x getVariable ["hds_civil_ambiance", false]
-                    && { alive _x }
-                    && { (_x distance2D _centre) < (_taille + 60) }
-                };
+                if (!_recent) then {
 
-                // Une ville qu'on traverse se vide derrière soi : le
-                // balayage retire ses habitants au fur et à mesure qu'on
-                // les dépasse. On regarde donc ce qui reste sur place,
-                // pas un drapeau posé une fois pour toutes.
-                if ((!_peuplee || { (count _habitants) < 5 }) && { time >= _prochain }) then {
-
-                    private _plus = round (_voulu * (([_centre] call _fnFacteur) - 1) / 2);
-
-                    [_centre, _plus, _taille, _idCiv, false] spawn fnc_occupations_civil_init;
-
-                    _lieu set [2, true];
-                    _lieu set [4, time + 45];
-
-                    ["INFO", "CIVILS", format [
-                        "agglomeration %1 - [%2,%3] r=%4, %5 habitant(s) encore sur place",
-                        (["peuplee", "repeuplee"] select _peuplee),
-                        round (_centre select 0), round (_centre select 1),
-                        round _taille, count _habitants
-                    ]] call hds_fnc_log;
-                };
-
-                // ─── 3. VOITURES GARÉES ───
-                // _routesOk retient s'il y a seulement des routes bordées
-                // de maisons ici : sans ça, un village qui n'en a aucune
-                // relançait un nearRoads complet à chaque cycle.
-                if (_routesOk != 0) then {
-
-                    if (_routesOk < 0) then {
-                        private _rh = (_centre nearRoads _taille) select {
-                            (count (nearestObjects [getPos _x, ["House"], 60])) > 0
-                        };
-                        _routesOk = [0, 1] select ((count _rh) > 0);
-                        _lieu set [3, _routesOk];
+                    // Combien de civils d'ambiance autour de lui.
+                    private _civils = allUnits select {
+                        _x getVariable ["hds_civil_ambiance", false]
+                        && { alive _x }
+                        && { (_x distance2D _p) < _rayonAmbiance }
                     };
 
-                    if (_routesOk isEqualTo 1) then {
+                    if ((count _civils) < 6) then {
 
-                        private _cibleGarees = ((round (_taille / 60)) max 2) min 14;
+                        private _maisons = nearestObjects [_p, ["House"], _rayonAmbiance];
 
-                        private _garees = vehicles select {
-                            _x getVariable ["hds_civil_ambiance", false]
-                            && { alive _x }
-                            && { (crew _x) isEqualTo [] }
-                            && { (_x distance2D _centre) < (_taille + 50) }
-                        };
+                        if ((count _maisons) >= 5) then {
 
-                        private _manqueGarees = _cibleGarees - (count _garees);
+                            [_p, -1, _rayonAmbiance, _idCiv, false]
+                                spawn fnc_occupations_civil_init;
 
-                        if (_manqueGarees > 0) then {
-                            [_centre, _taille, _manqueGarees min 3, _idCiv]
+                            [_p, _rayonAmbiance, -1, _idCiv]
                                 spawn hds_fnc_voituresGarees;
+
+                            _recents pushBack [_p, time + 90];
+
+                            ["INFO", "CIVILS", format [
+                                "ambiance posee autour de [%1,%2] - %3 maisons, %4 civil(s) deja sur place",
+                                round (_p select 0), round (_p select 1),
+                                count _maisons, count _civils
+                            ]] call hds_fnc_log;
+                        } else {
+                            // Rien à peupler ici : on note quand même le
+                            // passage, sinon on recompte les maisons
+                            // toutes les huit secondes en rase campagne.
+                            _recents pushBack [_p, time + 60];
                         };
                     };
                 };
-            };
 
-            // Désertée : elle se repeuplera à la prochaine visite.
-            if (_desertee && { _peuplee }) then { _lieu set [2, false] };
-
-        } forEach _lieux;
+            } forEach _joueurs;
+        };
     };
 
     sleep 8;
