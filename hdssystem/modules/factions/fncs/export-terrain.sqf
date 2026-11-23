@@ -167,18 +167,50 @@ private _coupe = false;
     };
 } forEach allMapMarkers;
 
+// ─── Objets nommés de la mission ───
+// Une tâche d'otage cherche « otage_0 ». Si personne n'a donné ce nom
+// à un homme dans l'éditeur, elle ne trouve rien et ne se valide
+// jamais — sans un mot dans le journal. C'est la même panne muette
+// que le marqueur de base, et le générateur peut l'attraper d'avance
+// s'il sait quels noms existent vraiment.
+//
+// Un objet posé par HDS en cours de partie n'a pas de nom de variable :
+// il se filtre tout seul. Les déclencheurs, eux, ne sont pas toujours
+// dans "All" selon les versions, d'où la seconde liste et le dedoublon.
+private _objets = [];
+private _vus = [];
+private _coupeObjets = false;
+
+{
+    private _n = vehicleVarName _x;
+    if (!(_n isEqualTo "") && { !(_n in _vus) }) then {
+        if (count _vus >= 250) then {
+            _coupeObjets = true;
+        } else {
+            _vus pushBack _n;
+            private _po = getPosATL _x;
+            _objets pushBack format [
+                "{""n"":""%1"",""x"":%2,""y"":%3}",
+                _n call _echappe, round (_po select 0), round (_po select 1)
+            ];
+        };
+    };
+} forEach ((allMissionObjects "All") + (allMissionObjects "EmptyDetector"));
+
 ["INFO", "TERRAIN", format [
-    "Terrain exporte : %1 (%2 m), grille %3, %4 lieux, %5 marqueurs, %6 caracteres de relief",
-    worldName, round _taille, _g, count _lieux, count _marqueurs, _g * _g
+    "Terrain exporte : %1 (%2 m), grille %3, %4 lieux, %5 marqueurs, %6 objets nommes, %7 caracteres de relief",
+    worldName, round _taille, _g, count _lieux, count _marqueurs, count _objets, _g * _g
 ]] call hds_fnc_log;
 
 format [
-    """terrain"":{""taille"":%1,""g"":%2,""hmax"":%3,""h"":""%4"",""lieux"":[%5],""marqueurs"":[%6],""coupe"":%7}",
+    """terrain"":{""taille"":%1,""g"":%2,""hmax"":%3,""h"":""%4"",""lieux"":[%5],""marqueurs"":[%6],""coupe"":%7,""objets"":[%8],""coupeObjets"":%9}",
     round _taille,
     _g,
     round _hmax,
     _chars joinString "",
     _lieux joinString ",",
     _marqueurs joinString ",",
-    _coupe
+    _coupe,
+    _objets joinString ",",
+    _coupeObjets
 ]

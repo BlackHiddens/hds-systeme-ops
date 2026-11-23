@@ -64,7 +64,14 @@ champ seul ne peut pas voir — une coordonnée tombée dans la mer, une
 d'exemple jamais remplacée.
 
 Importe le registre du serveur (voir OUTILS ADMIN) et c'est ta vraie
-carte qui s'affiche, trait de côte et noms de villages compris.
+carte qui s'affiche, trait de côte et noms de villages compris. Le
+générateur peut alors aussi VÉRIFIER ta mission : que le marqueur de
+base existe, que les otages et les caisses que tu réclames existent
+vraiment, et qu'ils sont bien là où l'étape se joue.
+
+Ces pannes-là sont muettes en jeu. hdsnombase qui ne désigne rien,
+c'est getMarkerPos "" donc [0,0,0] : les otages à ramener n'arrivent
+jamais, la tâche ne se valide pas, et rien ne l'écrit nulle part.
 
 
 LES MODULES
@@ -110,8 +117,9 @@ OUTILS ADMIN
 registre de factions en JSON. Réservé aux UID listés dans
 hds_administrateurs.
 
-Le registre emporte aussi le relief de la carte : une grille de 96 x 96
-hauteurs, un caractère par point, 9 Ko. C'est ce qui permet au
+Le registre emporte aussi le relief de la carte, tes marqueurs et le
+nom des objets posés dans l'éditeur. Le relief est une grille de
+96 x 96 hauteurs, un caractère par point, 9 Ko. C'est ce qui permet au
 générateur de dessiner ta carte. Aucune commande SQF ne sait extraire
 l'image satellite d'une carte, et l'embarquer coûterait des centaines
 de kilo-octets ; le relief, lui, marche sur toutes les cartes, moddées

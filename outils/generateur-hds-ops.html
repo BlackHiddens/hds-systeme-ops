@@ -801,9 +801,13 @@ body.wiki-on .bar { display: none !important; }
       <span class="wk-ic violet"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4-6 2.5v13L9 17l6 2.5 6-2.5v-13L15 6.5z"/><path d="M9 4v13M15 6.5v13"/></svg></span>
       <strong>Pour la vraie carte&nbsp;: importe le registre</strong>
       <p>En jeu, <b>Échap &rarr; HDS &mdash; Outils admin &rarr; Copier le registre</b>, puis colle-le dans
-        &laquo;&nbsp;Registre du serveur&nbsp;&raquo;. Le relief de ta carte part avec&nbsp;: elle se dessine
-        pour de vrai, avec le trait de côte et le nom des villages.</p>
-      <p class="wk-note">Sans ça, tu as un plan schématique. Ça marche aussi, c'est juste moins parlant.</p>
+        &laquo;&nbsp;Registre du serveur&nbsp;&raquo;. Partent avec lui&nbsp;: le relief de ta carte, tes
+        marqueurs, et le nom des objets que tu as posés dans l'éditeur.</p>
+      <p>La carte se dessine alors pour de vrai &mdash; et surtout, le générateur peut <b>vérifier</b>&nbsp;:
+        que ton marqueur de base existe, que tes otages et tes caisses existent, et qu'ils sont bien
+        là où l'étape se joue.</p>
+      <p class="wk-note">Sans ça, tu as un plan schématique et aucune vérification. Ça marche aussi,
+        c'est juste que personne ne te prévient.</p>
     </div>
     <div class="wk-card">
       <span class="wk-ic green"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/></svg></span>
@@ -2823,7 +2827,35 @@ function lireTerrain(t) {
   const marqueurs = (Array.isArray(t.marqueurs) ? t.marqueurs : [])
     .filter((m) => m && m.n && isFinite(Number(m.x)) && isFinite(Number(m.y)))
     .map((m) => ({ n: reparerAccents(String(m.n)), x: Number(m.x), y: Number(m.y) }));
-  return { g, taille, hmax, h, lieux, marqueurs, coupe: t.coupe === true };
+  const objets = (Array.isArray(t.objets) ? t.objets : [])
+    .filter((o) => o && o.n)
+    .map((o) => ({ n: reparerAccents(String(o.n)), x: Number(o.x), y: Number(o.y) }));
+  return {
+    g, taille, hmax, h, lieux, marqueurs,
+    coupe: t.coupe === true,
+    objets, coupeObjets: t.coupeObjets === true,
+  };
+}
+
+/* Tous les noms d'objets de l'éditeur que le scénario réclame. On
+   balaie les champs par TYPE plutôt que par nom : un champ ajouté plus
+   tard sera vérifié sans qu'on y pense. */
+function planNomsEditeur(vs) {
+  const out = [];
+  const prendre = (fields, vals, ou, exemples) => {
+    (fields || []).forEach((f) => {
+      if (f.t !== 'ident' && f.t !== 'idents') return;
+      const brut = vals ? vals[f.k] : '';
+      const estExemple = exemples && String(brut || '').trim() === String(f.def || '').trim();
+      parseList(brut).forEach((n) => out.push({ n, ou, champ: f.l, exemple: !!estExemple }));
+    });
+  };
+  (vs.steps || []).forEach((e, i) => {
+    const def = STEPS[e.type];
+    if (def) prendre(def.fields, e.v, 'Étape ' + (i + 1), false);
+  });
+  prendre(PARAM_FIELDS, vs.params, 'Joueurs et objets', true);
+  return out;
 }
 
 /* Où est la base, d'après le nom tapé dans « Joueurs et objets » et
@@ -3262,6 +3294,68 @@ function planAdvice(vs, pts) {
     if (d > 4000) {
       add('warn', null, 'Ta base est à ' + km(d) + ' de la première étape, soit ' + planMarche(d)
         + ' min à pied. Prévois de quoi rouler ou voler.');
+    }
+  }
+
+  /* Les noms d'objets de l'éditeur. Même panne muette que le marqueur
+     de base, en plus fréquente : une tâche qui cherche « otage_0 »
+     quand personne ne l'a nommé ainsi ne se valide jamais.
+
+     Tout est groupé en deux lignes au plus : un par nom ferait une
+     dizaine d'alertes dès le premier import, pour un seul problème. */
+  if (t && !t.coupeObjets && t.objets.length) {
+    const connus = {};
+    t.objets.forEach((o) => { connus[o.n.toLowerCase()] = o; });
+    const vus = {};
+    const absentsEtapes = [];
+    const absentsExemple = [];
+    const absentsParams = [];
+    let loin = null;
+
+    planNomsEditeur(vs).forEach((r) => {
+      const cle = r.ou + '/' + r.n.toLowerCase();
+      if (vus[cle]) return;
+      vus[cle] = true;
+      const o = connus[r.n.toLowerCase()];
+      if (!o) {
+        if (r.ou !== 'Joueurs et objets') absentsEtapes.push('« ' + r.n + ' » (' + r.ou + ')');
+        else if (r.exemple) absentsExemple.push(r.n);
+        else absentsParams.push(r.n);
+        return;
+      }
+      /* L'objet existe, mais ailleurs que là où l'étape se joue : les
+         ennemis et le marqueur seront d'un côté, l'objectif de
+         l'autre. */
+      const n = parseInt(String(r.ou).replace(/\D+/g, ''), 10);
+      const e = (vs.steps || [])[n - 1];
+      const p = e && parsePos(e.v.centre);
+      if (!p) return;
+      const d = planDist({ x: p[0], y: p[1] }, o);
+      if (d > 800 && (!loin || d > loin.d)) loin = { n: r.n, ou: r.ou, d };
+    });
+
+    const liste = (a) => (a.length > 5 ? a.slice(0, 5).join(', ') + ' et ' + (a.length - 5) + ' autre' + (a.length > 6 ? 's' : '') : a.join(', '));
+
+    if (absentsEtapes.length === 1) {
+      add('bad', null, 'L’objet ' + absentsEtapes[0] + ' n’existait pas dans ta mission quand tu as '
+        + 'exporté le registre. La tâche qui le cherche ne trouvera rien et ne se validera jamais.');
+    } else if (absentsEtapes.length) {
+      add('bad', null, absentsEtapes.length + ' noms d’objets n’existaient pas dans ta mission quand tu as '
+        + 'exporté le registre : ' + liste(absentsEtapes)
+        + '. Les tâches qui les cherchent ne trouveront rien et ne se valideront jamais.');
+    }
+    if (absentsExemple.length) {
+      add('warn', null, 'Les noms de « Joueurs et objets » sont encore ceux de l’exemple ('
+        + liste(absentsExemple) + ') : ils ne désignent rien dans ta mission. '
+        + 'Mets les tiens, ou vide ces champs.');
+    }
+    if (absentsParams.length) {
+      add('warn', null, 'Dans « Joueurs et objets », ' + liste(absentsParams)
+        + ' ne correspond' + (absentsParams.length > 1 ? 'ent' : '') + ' à aucun objet de ta mission.');
+    }
+    if (loin) {
+      add('warn', null, '« ' + loin.n + ' » est posé à ' + km(loin.d) + ' de la position de l’'
+        + loin.ou.toLowerCase() + '. Les ennemis et le marqueur seront d’un côté, l’objectif de l’autre.');
     }
   }
 
