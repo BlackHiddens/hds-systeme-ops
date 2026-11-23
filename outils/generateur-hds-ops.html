@@ -224,7 +224,7 @@ textarea { resize: vertical; line-height: 1.55; }
 /* ---------- étapes ---------- */
 .addwrap { position: relative; z-index: 20; }
 #paneSteps { position: relative; z-index: 5; }
-.menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; width: min(340px, calc(100vw - 32px)); max-height: min(70vh, 460px); overflow: auto; padding: 8px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r); box-shadow: var(--shadow-l); animation: rise 0.18s var(--ease) backwards; }
+.menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; width: min(430px, calc(100vw - 32px)); max-height: min(70vh, 460px); overflow: auto; padding: 8px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r); box-shadow: var(--shadow-l); animation: rise 0.18s var(--ease) backwards; }
 .menu-t { padding: 10px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .menu-i { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: var(--r-xs); background: none; text-align: left; font-size: 13.5px; }
 .menu-i:hover, .menu-i:focus-visible { background: var(--accent-soft); color: var(--accent-strong); outline: none; }
@@ -339,6 +339,9 @@ pre.code { margin: 0; padding: 14px 15px; background: var(--code-bg); border: 1p
 /* ---------- retours ---------- */
 #toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 70; padding: 11px 18px; border-radius: var(--r-s); background: #1e2029; color: #f6f7f9; font-size: 13.5px; font-weight: 500; box-shadow: var(--shadow-l); opacity: 0; transform: translate(-50%, 12px); pointer-events: none; transition: opacity 0.2s, transform 0.25s var(--ease); }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast.act { pointer-events: auto; display: flex; align-items: center; gap: 14px; padding-right: 10px; }
+.toast-a { padding: 5px 11px; border: 0; border-radius: var(--r-xs); background: rgba(255, 255, 255, 0.14); color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+.toast-a:hover, .toast-a:focus-visible { background: rgba(255, 255, 255, 0.26); outline: none; }
 .bar { display: none; }
 body.wiki-on .bar { display: none !important; }
 .howto-more { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
@@ -375,7 +378,12 @@ body.wiki-on .bar { display: none !important; }
 .ch-t h2 .si, .fold-t .si { color: var(--muted); }
 .tabs button { display: inline-flex; align-items: center; gap: 7px; }
 .seg button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
-.menu-i { display: flex; align-items: center; gap: 10px; }
+.menu-i { display: flex; align-items: flex-start; gap: 10px; }
+.menu-i .si { flex: none; margin-top: 2px; }
+.menu-x { display: block; min-width: 0; }
+.menu-x strong { display: block; font-weight: 600; }
+.menu-x em { display: block; margin-top: 2px; font-style: normal; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
+.menu-i:hover .menu-x em, .menu-i:focus-visible .menu-x em { color: inherit; opacity: 0.8; }
 .menu-i .si { color: var(--muted); }
 .menu-i:hover .si, .menu-i:focus-visible .si { color: var(--accent); }
 .ttl strong { display: inline-flex; align-items: center; gap: 8px; }
@@ -961,6 +969,28 @@ function forgetRegistre() {
   FACTIONS = FACTIONS_DEFAUT.slice();
   buildFactionAliases();
 }
+/* Un index de faction (0..7) perd son sens dès que le registre du
+   serveur est importé : la liste déroulante n'affiche plus que des
+   identifiants, le navigateur retombe sur sa première entrée, et la
+   valeur stockée reste l'index. C'est l'index qui part dans le code :
+   le générateur montrait une faction et en écrivait une autre.
+
+   La conversion existait déjà dans importReg, mais elle ne touchait
+   que les étapes présentes au moment de l'import. Une étape ajoutée
+   ensuite, ou un simple rechargement de page, repassaient à côté. */
+function migreFaction(v) {
+  if (!REGISTRE || !v) return v;
+  if (/^[0-9]+$/.test(String(v.faction == null ? '' : v.faction))) {
+    v.faction = String(factionFromLegacy(parseInt(v.faction, 10)));
+  }
+  return v;
+}
+function migreToutesFactions(st) {
+  if (!st) return;
+  (st.steps || []).forEach((e) => migreFaction(e.v));
+  migreFaction(st.pub && st.pub.v);
+}
+
 /* Ancien index -> id du registre s'il y est, sinon l'index tel quel */
 function factionFromLegacy(i) {
   if (!REGISTRE) return i;
@@ -1173,6 +1203,7 @@ const STEPS = {
   collecter: {
     label: 'Récupérer des objets',
     group: 'Tâches',
+    help: 'Récupérer des objets et les rapporter. Pose-les dans l’éditeur et nomme-les, par exemple caisse_0.',
     task: true,
     fields: [
       pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
@@ -1188,6 +1219,7 @@ const STEPS = {
   detruire: {
     label: 'Détruire des cibles',
     group: 'Tâches',
+    help: 'Détruire des objets sur place : cache d’armes, radar, dépôt. Pose-les dans l’éditeur et nomme-les.',
     task: true,
     fields: [
       pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
@@ -1203,6 +1235,7 @@ const STEPS = {
   apprehender: {
     label: 'Capturer une cible',
     group: 'Tâches',
+    help: 'Capturer un homme VIVANT et le livrer ailleurs. Pose-le dans l’éditeur et nomme-le.',
     task: true,
     fields: [
       pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
@@ -1219,6 +1252,7 @@ const STEPS = {
   rejoindre: {
     label: 'Rejoindre un point',
     group: 'Tâches',
+    help: 'Atteindre un point de la carte. Rien à poser dans l’éditeur.',
     task: true,
     fields: [
       pos('centre', 'Point à rejoindre', '4506.92, 5729.59, 0'),
@@ -1233,6 +1267,7 @@ const STEPS = {
   securiser: {
     label: 'Sécuriser une zone',
     group: 'Tâches',
+    help: 'Tenir une zone jusqu’à ce qu’il n’y reste plus d’ennemi. Rien à poser dans l’éditeur.',
     task: true,
     fields: [
       pos('centre', 'Zone à sécuriser', '4506.92, 5729.59, 0'),
@@ -1245,6 +1280,7 @@ const STEPS = {
   voler: {
     label: 'Voler un véhicule',
     group: 'Tâches',
+    help: 'Voler un véhicule précis. Pose-le dans l’éditeur et nomme-le.',
     task: true,
     fields: [
       pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
@@ -1258,6 +1294,7 @@ const STEPS = {
   telecharger: {
     label: 'Pirater un objet',
     group: 'Tâches',
+    help: 'Pirater un ordinateur ou une radio pour en tirer des données. Pose l’objet et nomme-le.',
     task: true,
     fields: [
       pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
@@ -1291,6 +1328,7 @@ const STEPS = {
   contreattaque: {
     label: 'Contre-attaque',
     group: 'Tactiques',
+    help: 'L’ennemi reprend l’initiative : infanterie et véhicules arrivent sur la position.',
     fields: [
       pos('centre', 'Position visée', '4502.1, 5681.85, 0'),
       fac('faction', 'Faction attaquante', 0),
@@ -1341,6 +1379,7 @@ const STEPS = {
   pause: {
     label: 'Pause',
     group: 'Autre',
+    help: 'Attendre un temps donné avant de lancer l’étape suivante.',
     fields: [int('s', 'Durée (secondes)', 60, 1)],
     sum: (v) => `${v.s} s`,
     gen: (O) => `sleep ${O.s};`,
@@ -1474,7 +1513,11 @@ function defaultState() {
 }
 function newStep(state, type) {
   const id = state.nextId++;
-  return { id, type, v: defaults(STEPS[type].fields), wait: !!STEPS[type].task, waitN: null, open: true };
+  return {
+    id, type,
+    v: migreFaction(defaults(STEPS[type].fields)),
+    wait: !!STEPS[type].task, waitN: null, open: true,
+  };
 }
 function preset(name) {
   const s = defaultState();
@@ -2444,6 +2487,9 @@ try {
   const regBrut = localStorage.getItem(REG_KEY);
   if (regBrut) readRegistre(JSON.parse(regBrut));
 } catch (e) { forgetRegistre(); }
+/* L'état est relu avant le registre : les factions qu'il porte peuvent
+   être d'anciens index, à convertir maintenant que la liste est connue. */
+migreToutesFactions(state);
 let reg = {}; // id de champ -> { control, def, errEl, vals, owner }
 let lastCode = { scenario: '', params: '' };
 let lastIssues = [];
@@ -2543,12 +2589,25 @@ function setAcc(el, open) {
   if (open) inner.removeAttribute('inert'); else inner.setAttribute('inert', '');
 }
 let toastTimer = 0;
-function toast(msg) {
+/* Un deuxième argument {label, run} ajoute un bouton au message, et lui
+   laisse six secondes au lieu de deux : le temps de comprendre qu'on
+   vient de supprimer la mauvaise étape. */
+function toast(msg, action) {
   const t = $('toast');
-  t.textContent = msg;
+  t.textContent = '';
+  t.append(document.createTextNode(msg));
+  if (action) {
+    t.append(h('button', {
+      type: 'button',
+      class: 'toast-a',
+      text: action.label,
+      onclick: () => { t.classList.remove('show', 'act'); action.run(); },
+    }));
+  }
+  t.classList.toggle('act', !!action);
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  toastTimer = setTimeout(() => t.classList.remove('show', 'act'), action ? 6000 : 2200);
 }
 
 /* ---------- infobulles ---------- */
@@ -3197,13 +3256,7 @@ function importReg() {
   if (!r.ok) { st.textContent = r.msg; st.className = 'note bad'; return; }
   /* Les étapes déjà saisies gardent leur sens : leurs index passent en
      ids, sinon la liste déroulante retomberait sur la première entrée. */
-  const migre = (vals) => {
-    if (vals && /^[0-9]+$/.test(String(vals.faction == null ? '' : vals.faction))) {
-      vals.faction = String(factionFromLegacy(parseInt(vals.faction, 10)));
-    }
-  };
-  state.steps.forEach((s) => migre(s.v));
-  if (state.pub) migre(state.pub.v);
+  migreToutesFactions(state);
   st.textContent = '';
   st.className = 'note';
   $('regBox').value = '';
@@ -3316,7 +3369,25 @@ function stepNode(s, i, count) {
           refresh();
         },
       }),
-      h('button', { type: 'button', class: 'ico del', 'aria-label': 'Supprimer', text: '×', onclick: () => { state.steps.splice(i, 1); renderSteps(); refresh(); } })));
+      /* Supprimer était définitif et instantané. Six secondes pour
+         revenir en arrière coûtent une variable. */
+      h('button', {
+        type: 'button', class: 'ico del', 'aria-label': 'Supprimer', text: '×',
+        onclick: () => {
+          const rang = i;
+          const retiree = state.steps.splice(i, 1)[0];
+          renderSteps();
+          refresh();
+          toast('« ' + def.label + ' » supprimée', {
+            label: 'Annuler',
+            run: () => {
+              state.steps.splice(Math.min(rang, state.steps.length), 0, retiree);
+              renderSteps();
+              refresh();
+            },
+          });
+        },
+      })));
 
   const main = h('div', { class: 'fields' });
   def.fields.filter((f) => !f.adv).forEach((f) => main.append(field('s' + s.id, s.type, f, s.v, s, 'steps')));
@@ -3374,7 +3445,14 @@ function renderMenu() {
   STEP_GROUPS.forEach((g) => {
     m.append(h('p', { class: 'menu-t', text: g }));
     Object.entries(STEPS).filter(([, d]) => d.group === g).forEach(([key, d]) => {
-      m.append(h('button', { type: 'button', class: 'menu-i', onclick: () => addStep(key) }, svgIco(STEP_ICO[key], 'si-s'), d.label));
+      /* Le nom seul ne suffit pas : « Voler », « Collecter » et
+         « Télécharger » se ressemblent tant qu'on n'a pas lu ce qu'elles
+         font, et surtout ce qu'il faut avoir posé dans l'éditeur. */
+      m.append(h('button', { type: 'button', class: 'menu-i', onclick: () => addStep(key) },
+        svgIco(STEP_ICO[key], 'si-s'),
+        h('span', { class: 'menu-x' },
+          h('strong', { text: d.label }),
+          d.help ? h('em', { text: d.help }) : null)));
     });
   });
 }
