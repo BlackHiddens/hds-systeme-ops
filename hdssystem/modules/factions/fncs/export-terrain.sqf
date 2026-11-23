@@ -134,16 +134,51 @@ private _lieux = [];
     _lieux pushBack (_items select (_x select 1));
 } forEach _rangs;
 
+// ─── Marqueurs de la mission ───
+// Ceux que le créateur a posés dans l'éditeur. Le générateur s'en sert
+// pour vérifier que le marqueur de base existe vraiment : hdsnombase
+// qui ne correspond à rien, c'est getMarkerPos "" — donc [0,0,0], le
+// coin de la carte. Les otages à ramener n'arrivent alors JAMAIS, et
+// rien ne le dit.
+//
+// On écarte seulement ce que HDS et Engima posent eux-mêmes en cours
+// de partie. La liste est courte exprès : en écarter un de trop ferait
+// croire au générateur qu'un marqueur du créateur est absent, et une
+// fausse alerte est pire que pas d'alerte.
+private _rejets = ["ENGIMA_TRAFFIC_", "SecuriserM_", "TacheCapturer", "TrackerCamionArme"];
+private _marqueurs = [];
+private _coupe = false;
+
+{
+    private _nom = _x;
+    private _garder = true;
+    { if ((_nom find _x) == 0) exitWith { _garder = false }; } forEach _rejets;
+
+    if (_garder) then {
+        if (count _marqueurs >= 120) then {
+            _coupe = true;
+        } else {
+            private _mp = getMarkerPos _nom;
+            _marqueurs pushBack format [
+                "{""n"":""%1"",""x"":%2,""y"":%3}",
+                _nom call _echappe, round (_mp select 0), round (_mp select 1)
+            ];
+        };
+    };
+} forEach allMapMarkers;
+
 ["INFO", "TERRAIN", format [
-    "Terrain exporte : %1 (%2 m), grille %3, %4 lieux, %5 caracteres de relief",
-    worldName, round _taille, _g, count _lieux, _g * _g
+    "Terrain exporte : %1 (%2 m), grille %3, %4 lieux, %5 marqueurs, %6 caracteres de relief",
+    worldName, round _taille, _g, count _lieux, count _marqueurs, _g * _g
 ]] call hds_fnc_log;
 
 format [
-    """terrain"":{""taille"":%1,""g"":%2,""hmax"":%3,""h"":""%4"",""lieux"":[%5]}",
+    """terrain"":{""taille"":%1,""g"":%2,""hmax"":%3,""h"":""%4"",""lieux"":[%5],""marqueurs"":[%6],""coupe"":%7}",
     round _taille,
     _g,
     round _hmax,
     _chars joinString "",
-    _lieux joinString ","
+    _lieux joinString ",",
+    _marqueurs joinString ",",
+    _coupe
 ]

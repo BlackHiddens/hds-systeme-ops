@@ -289,6 +289,8 @@ textarea { resize: vertical; line-height: 1.55; }
 .plan-box svg { display: block; width: 100%; height: auto; }
 .plan-cap { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 7px 2px 0; font-size: 11.5px; color: var(--muted); }
 .plan-cap b { font-weight: 600; color: var(--ink-2); }
+.plan-go { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.plan-go:hover, .plan-go:focus-visible { color: var(--accent-strong); outline: none; }
 .plan-pin { cursor: pointer; }
 .plan-pin .pin-h { opacity: 0; transition: opacity 0.14s var(--ease); }
 .plan-pin:hover .pin-h, .plan-pin:focus-visible .pin-h { opacity: 1; }
@@ -1014,6 +1016,8 @@ function cut(s, n) { s = String(s == null ? '' : s).trim(); return s.length > n 
 
 /* ---------- fabriques de champs ---------- */
 const adv = (f) => Object.assign(f, { adv: true });
+/* L'aide de ce champ vit dans TIPS, indexée par nom : elle passe
+   devant un hint posé ici. */
 const pos = (k, l, def) => ({ k, l: l + ' (x, y, z)', t: 'pos', def });
 const int = (k, l, def, min, hint) => ({ k, l, t: 'int', def, min, hint });
 const bool = (k, l, def, hint) => ({ k, l, t: 'bool', def, hint });
@@ -1398,7 +1402,7 @@ const STEP_GROUPS = ['Missions et ennemis', 'Tâches', 'Tactiques', 'Autre'];
 
 /* ---------- joueurs et objets (mes-parametres.sqf) ---------- */
 const PARAM_FIELDS = [
-  { k: 'base', l: 'Marqueur de ta base', t: 'marker', def: 'hds-ros-base', hint: 'Le nom du marqueur posé sur ta base dans l’éditeur.' },
+  { k: 'base', l: 'Marqueur de ta base', t: 'marker', def: 'hds_base_newhds', hint: 'Le nom du marqueur posé sur ta base dans l’éditeur. Celui de la mission livrée avec le dépôt s’appelle hds_base_newhds.' },
   ids('arsenaux', 'Arsenaux', 'arsenal_console', 'Objets de l’éditeur, séparés par des virgules.', { opt: true }),
   ids('soins', 'Lieux de soins', 'soins', null, { opt: true }),
   ids('postes', 'Postes de communication', 'arsenal_console', null, { opt: true }),
@@ -2651,8 +2655,8 @@ const SHORT = {
   'ctx.civOubli': 'Oubli',
 };
 const TIPS = {
-  centre: 'Coordonnées x, y relevées dans l’éditeur. Exemple : 4506, 5729.',
-  livraison: 'Où ramener ou livrer. Coordonnées x, y.',
+  centre: 'Relève-les dans l’éditeur Arma : pose un objet à l’endroit voulu, ouvre ses attributs, et recopie Position X et Y. Le Z reste à 0. Exemple : 4506, 5729, 0.',
+  livraison: 'Où ramener ou livrer : mêmes coordonnées relevées dans l’éditeur. En général ta base.',
   otages: 'Noms de variable des otages posés dans l’éditeur, séparés par des virgules.',
   objets: 'Noms de variable des objets posés dans l’éditeur, séparés par des virgules.',
   cibles: 'Noms de variable des cibles posées dans l’éditeur, séparés par des virgules.',
@@ -2813,7 +2817,25 @@ function lireTerrain(t) {
       t: String(l.t == null ? '' : l.t),
       x: Number(l.x), y: Number(l.y), r: Number(l.r) || 60,
     }));
-  return { g, taille, hmax, h, lieux };
+  /* Les marqueurs que le créateur a posés dans son éditeur. « coupe »
+     dit que l'export a plafonné : dans ce cas on se tait au lieu
+     d'annoncer un marqueur absent qui ne l'est peut-être pas. */
+  const marqueurs = (Array.isArray(t.marqueurs) ? t.marqueurs : [])
+    .filter((m) => m && m.n && isFinite(Number(m.x)) && isFinite(Number(m.y)))
+    .map((m) => ({ n: reparerAccents(String(m.n)), x: Number(m.x), y: Number(m.y) }));
+  return { g, taille, hmax, h, lieux, marqueurs, coupe: t.coupe === true };
+}
+
+/* Où est la base, d'après le nom tapé dans « Joueurs et objets » et
+   les marqueurs réellement présents dans la mission. */
+function planBase(vs) {
+  const t = planTerrain();
+  if (!t || !t.marqueurs) return null;
+  const nom = String((vs.params && vs.params.base) || '').trim();
+  if (!nom) return null;
+  const m = t.marqueurs.find((x) => x.n.toLowerCase() === nom.toLowerCase());
+  if (m) return { nom, x: m.x, y: m.y };
+  return t.coupe ? null : { nom, manquant: true };
 }
 const planTerrain = () => (REGISTRE && REGISTRE.terrain) || null;
 const planSombre = () => (themeChoix ? themeChoix === 'dark' : SOMBRE.matches);
@@ -3035,6 +3057,19 @@ function renderPlan(vs) {
       + '" stroke-width="4.5" stroke-linejoin="round">' + dtx.join('') + '</g>');
   }
 
+  /* La base, avant les étapes : c'est le point de départ, pas une
+     étape. Carrée pour qu'on ne la confonde pas avec une épingle. */
+  const base = planBase(vs);
+  if (base && !base.manquant) {
+    const BX = px(base.x); const BY = py(base.y);
+    g.push('<g><rect x="' + (BX - 11).toFixed(1) + '" y="' + (BY - 11).toFixed(1) + '" width="22" height="22" rx="5" '
+      + 'fill="var(--ink)" stroke="' + halo + '" stroke-width="2.5"/>'
+      + '<path d="M' + (BX - 5).toFixed(1) + ' ' + (BY + 4).toFixed(1) + 'v-5l5-4 5 4v5z" fill="none" stroke="var(--surface)" stroke-width="1.8" stroke-linejoin="round"/>'
+      + '<text x="' + BX.toFixed(1) + '" y="' + (BY + 26).toFixed(1) + '" text-anchor="middle" font-size="13" font-weight="600" '
+      + 'fill="' + encre + '" paint-order="stroke" stroke="' + halo + '" stroke-width="3.5" stroke-linejoin="round">Base</text>'
+      + '<title>' + planEsc(base.nom) + '</title></g>');
+  }
+
   // Les épingles
   pts.forEach((p) => {
     const X = px(p.x); const Y = py(p.y);
@@ -3065,8 +3100,21 @@ function renderPlan(vs) {
     + vide
     + '<p class="plan-cap"><span>' + (t
       ? '<b>' + planEsc(REGISTRE.carte) + '</b> · ' + String(Math.round(t.taille / 100) / 10).replace('.', ',') + ' km de côté · relief du serveur'
-      : '<b>Plan schématique</b> · importe le registre du serveur pour voir la vraie carte')
+      : '<b>Plan schématique</b> · <button type="button" class="plan-go" id="planGo">importe le registre du serveur</button> pour voir la vraie carte')
     + '</span><span>' + mains.length + (mains.length > 1 ? ' étapes situées' : ' étape située') + '</span></p>';
+
+  /* Une phrase qui dit quoi faire sans donner le moyen de le faire,
+     c'est une impasse : le pli du registre est tout en bas de la
+     colonne de gauche, replié. */
+  const go = $('planGo');
+  if (go) {
+    go.addEventListener('click', () => {
+      const h = $('regH');
+      if (h && h.getAttribute('aria-expanded') !== 'true') h.click();
+      const box2 = $('regBox');
+      if (box2) { box2.scrollIntoView({ block: 'center', behavior: 'smooth' }); box2.focus({ preventScroll: true }); }
+    });
+  }
 
   box.querySelectorAll('.plan-pin').forEach((el) => {
     const go = () => planGoto(parseInt(el.getAttribute('data-step'), 10));
@@ -3200,6 +3248,23 @@ function planAdvice(vs, pts) {
     });
   }
 
+  /* Le marqueur de base. C'est la panne silencieuse par excellence :
+     hdsnombase qui ne désigne rien, c'est getMarkerPos "" — donc le
+     coin de la carte. Les otages à ramener n'y arrivent jamais, la
+     tâche ne se valide pas, et aucun message n'est écrit nulle part. */
+  const base = planBase(vs);
+  if (base && base.manquant) {
+    add('bad', null, 'Le marqueur de base « ' + base.nom + ' » n’existe pas dans ta mission. '
+      + 'Les tâches qui ramènent quelqu’un à la base ne pourront jamais se valider : '
+      + 'pose ce marqueur dans l’éditeur, ou corrige son nom dans « Joueurs et objets ».');
+  } else if (base && mains.length) {
+    const d = planDist(base, mains[0]);
+    if (d > 4000) {
+      add('warn', null, 'Ta base est à ' + km(d) + ' de la première étape, soit ' + planMarche(d)
+        + ' min à pied. Prévois de quoi rouler ou voler.');
+    }
+  }
+
   // Aucune tâche : rien à faire pour les joueurs
   const steps = vs.steps || [];
   if (steps.length && !steps.some((s) => STEPS[s.type] && STEPS[s.type].task)) {
@@ -3210,16 +3275,24 @@ function planAdvice(vs, pts) {
   /* Un bloc qui ne fait que rouspeter finit par ne plus être lu. Quand
      il n'y a rien à redire, il le dit : c'est la réponse à « est-ce
      que ça va marcher ? », que le débutant se pose à chaque fois. */
-  if (!out.length && t && mains.length >= 2) {
-    let max = 0;
-    for (let i = 1; i < mains.length; i += 1) max = Math.max(max, planDist(mains[i - 1], mains[i]));
-    /* « Le plus long trajet fait 0 m, soit 1 min à pied » : vrai, et
-       ridicule. Les trois étapes au même endroit sont le schéma le
-       plus courant — autant le dire comme tel. */
-    add('ok', null, 'Les ' + mains.length + ' étapes situées sont sur la terre ferme et dans la carte. '
-      + (max < 150
+  if (!out.length && t && mains.length) {
+    const dit = [mains.length > 1
+      ? 'Les ' + mains.length + ' étapes situées sont sur la terre ferme et dans la carte.'
+      : 'L’étape située est sur la terre ferme et dans la carte.'];
+    if (base && !base.manquant) {
+      dit.push('Ta base est à ' + km(planDist(base, mains[0])) + ' de la première.');
+    }
+    if (mains.length > 1) {
+      let max = 0;
+      for (let i = 1; i < mains.length; i += 1) max = Math.max(max, planDist(mains[i - 1], mains[i]));
+      /* « Le plus long trajet fait 0 m, soit 1 min à pied » : vrai, et
+         ridicule. Trois étapes au même endroit sont le schéma le plus
+         courant — autant le dire comme tel. */
+      dit.push(max < 150
         ? 'Elles se jouent toutes sur le même secteur.'
-        : 'Le plus long trajet fait ' + km(max) + ', soit ' + planMarche(max) + ' min à pied.'));
+        : 'Le plus long trajet entre deux étapes fait ' + km(max) + ', soit ' + planMarche(max) + ' min à pied.');
+    }
+    add('ok', null, dit.join(' '));
   }
 
   return out;
