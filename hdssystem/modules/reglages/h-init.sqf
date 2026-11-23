@@ -9,8 +9,21 @@
  *
  * ── Règle que je me suis fixée ──
  * Un réglage n'est ajouté que s'il a un point de branchement réel. Pas
- * de bouton qui ne fait rien. Les cinq ci-dessous agissent tous sur du
+ * de bouton qui ne fait rien. Les sept ci-dessous agissent tous sur du
  * code existant, et le commentaire de chacun dit où.
+ *
+ * ── Ce menu n'est pas la configuration de la mission ──
+ * La mission se configure dans init-scenario.sqf, donc dans le
+ * générateur : celui qui fabrique une mission n'ouvre jamais
+ * hdssystem\, et un nombre qui n'existerait que dans ce menu serait un
+ * nombre que le générateur ne peut pas produire.
+ *
+ * Ce menu est donc un tableau de bord d'administrateur : couper la vie
+ * civile sur un serveur qui rame, monter le journal pour comprendre un
+ * bug, rattraper une circulation trop maigre sans relancer la partie.
+ * Les deux curseurs de trafic ne font que CORRIGER ce que le scénario a
+ * demandé, et leur commentaire explique pourquoi il ne peut pas en être
+ * autrement.
  *
  * ── Pourquoi pas la liste des 205 factions ──
  * Un réglage CBA doit être déclaré à l'identique sur toutes les
@@ -124,40 +137,60 @@ private _poser = {
 ] call _poser;
 
 // ══════════════════════════════════════════════════════════
-// 6. Densité du trafic civil  →  hds_civils_densite
+// 6. Densité du trafic civil  →  hds_vie_densite
 // ══════════════════════════════════════════════════════════
-// Relu à chaque cycle par fnc_hds_vie_civile : le changement prend
-// effet en huit secondes, sans relancer la mission. C'est le nombre de
-// véhicules entretenus AUTOUR des joueurs, pas sur toute la carte —
-// l'ancien VEHICLES_COUNT d'Engima valait 5.
+// ── Ces deux curseurs ne décident pas, ils corrigent ──
+// La valeur de départ vient d'init-scenario.sqf, c'est-à-dire du
+// générateur. Ces curseurs ne sont là que pour rattraper une mission
+// trop vide ou trop chargée sans la relancer : fnc_hds_vie_civile ne
+// les suit que lorsqu'ils BOUGENT.
+//
+// C'est volontaire, et c'est la seule façon de faire. Dans CBA, le nom
+// d'un réglage est le nom de sa variable, et CBA la réécrit tout seul à
+// chaque rafraîchissement — au postInit, au chargement d'une
+// sauvegarde, à chaque diffusion. Un scénario qui écrirait
+// hds_civils_densite se ferait reprendre sa valeur sans prévenir. Nos
+// valeurs vivent donc dans hds_vie_densite et hds_vie_portee, que CBA
+// ne connaît pas.
+//
+// Pour la même raison, pas de script ici : CBA fait déjà
+// « missionNamespace setVariable [nom du reglage, valeur] » lui-même,
+// et un « hds_civils_densite = _v » ne ferait que répéter ce qu'il
+// vient de faire.
+//
+// C'est un nombre de véhicules entretenus AUTOUR des joueurs, pas sur
+// toute la carte — l'ancien VEHICLES_COUNT d'Engima valait 5.
 [
     "hds_civils_densite", "SLIDER",
-    ["Densité du trafic civil", "Nombre de véhicules civils entretenus autour des joueurs. 0 : plus de trafic, mais les habitants restent."],
+    ["Densité du trafic civil", "Rattrapage en jeu. Le scénario fixe la valeur de départ ; bouger ce curseur la remplace. 0 : plus de trafic, les habitants restent."],
     [0, 30, 8, 0],
     1,
-    { params ["_v"]; hds_civils_densite = _v; },
+    {},
     false
 ] call _poser;
 
 // ══════════════════════════════════════════════════════════
-// 7. Portée de la vie civile  →  hds_civils_portee
+// 7. Portée du trafic civil  →  hds_vie_portee
 // ══════════════════════════════════════════════════════════
-// Distance maximale d'apparition des véhicules civils. Tout le reste
-// en découle : la distance minimale (60 %), le rayon où le quota est
-// compté (+100 m), et celle au-delà de laquelle on oublie (x1,8).
+// Même rôle de rattrapage que le précédent, et même mécanique.
+//
+// Distance maximale d'apparition des véhicules civils ; la distance
+// minimale en découle (60 %).
 //
 // Court (300-500) : du monde sur la route juste autour de toi, et rien
 // au loin. C'est le réglage d'origine, celui qui donnait l'impression
 // de routes vivantes. Long (900+) : le trafic s'étale, les mêmes
 // véhicules couvrent plus de terrain, donc on en croise moins.
 //
-// Relu à chaque cycle : effet en cinq secondes.
+// Engima lisait cette distance une seule fois, au démarrage. Elle est
+// maintenant relue à chaque tour de sa boucle principale, donc bouger
+// le curseur a bien un effet en cours de partie.
 [
     "hds_civils_portee", "SLIDER",
-    ["Portée de la vie civile", "Distance maximale d'apparition des véhicules civils, en mètres. Plus court = plus dense autour de toi."],
+    ["Portée du trafic civil", "Rattrapage en jeu. Distance maximale d'apparition des véhicules civils, en mètres. Plus court = plus dense autour de toi."],
     [200, 1500, 500, 0],
     1,
-    { params ["_v"]; hds_civils_portee = _v; },
+    {},
     false
 ] call _poser;
 

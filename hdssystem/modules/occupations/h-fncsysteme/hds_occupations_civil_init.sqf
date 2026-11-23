@@ -54,12 +54,19 @@ params [
 // appelée sans argument, la fonction donnait sa population la plus
 // maigre — et dans un lieu sans maison, exactement un habitant.
 //
-// -1 veut maintenant dire « sers-toi du réglage », c'est-à-dire du
-// curseur « Densité » du menu CBA. Un 0 explicite reste un 0 : quand
-// fnc_hds_vie_civile calcule un supplément nul pour la rase campagne,
-// c'est bien ce qu'il veut.
+// -1 veut maintenant dire « sers-toi de la densité en vigueur ».
+// Celle-ci vient d'abord du scénario — hds_vie_habitants, posée par
+// fnc_hds_vie_civile depuis init-scenario.sqf — et seulement à défaut
+// du curseur du menu CBA, pour une mission qui n'utilise pas la vie
+// civile mais appelle quand même cette fonction.
+//
+// Un 0 explicite reste un 0 : quand fnc_hds_vie_civile calcule un
+// supplément nul pour la rase campagne, c'est bien ce qu'il veut.
 if (_ratio < 0) then {
-    _ratio = round ((missionNamespace getVariable ["hds_civils_densite", 8]) / 2);
+    _ratio = round (missionNamespace getVariable [
+        "hds_vie_habitants",
+        (missionNamespace getVariable ["hds_civils_densite", 8]) / 2
+    ]);
 };
 
 if (!isServer) exitWith {};
@@ -167,7 +174,6 @@ private _fnQuelquePart = {
 private _routes = _centre nearRoads _taille;
 
 private _poses = 0;
-private _dernierPieton = objNull;
 
 for "_i" from 1 to _nb do {
 
@@ -227,26 +233,8 @@ for "_i" from 1 to _nb do {
         // est deja supprime des qu'il s'eloigne, le geler en plus ne
         // fait qu'ajouter une facon de le voir immobile.
         _hommeP setVariable ["hds_civil_ambiance", true, true];
-        _dernierPieton = _hommeP;
         _poses = _poses + 1;
     };
-};
-
-// ─── De quoi trancher au prochain essai ───
-// « Je ne croise aucun piéton » peut vouloir dire trois choses : ils
-// n'existent pas, ils existent mais n'ont pas d'itinéraire, ou ils en
-// ont un mais la simulation est coupée. On relève les trois sur le
-// dernier piéton créé plutôt que de continuer à deviner.
-if (!isNull _dernierPieton) then {
-    private _grpP = group _dernierPieton;
-
-    ["INFO", "CIVILS", format [
-        "temoin pieton : %1 waypoint(s), simulation %2, comportement %3, a %4 m du centre",
-        count (waypoints _grpP),
-        ["COUPEE", "active"] select (simulationEnabled _dernierPieton),
-        behaviour _dernierPieton,
-        round (_dernierPieton distance2D _centre)
-    ]] call hds_fnc_log;
 };
 
 ["INFO", "CIVILS", format [

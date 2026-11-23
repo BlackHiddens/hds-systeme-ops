@@ -6,34 +6,71 @@
  * il n'y a rien, et rien ne tourne.
  *
  * Le trafic routier est confié au script d'Engima, qui suit déjà les
- * joueurs de la même façon.
+ * joueurs de la même façon. Engima n'est pas exposé au scénario : il
+ * est entièrement piloté d'ici, et tout ce qui le règle passe par les
+ * paramètres ci-dessous.
  *
- * 0 : <NUMBER> densité (habitants ajoutés, et compte du trafic)
- * 1 : <BOOL>   peupler les abords des joueurs
- * 2 : <ARRAY>  conservé pour les anciens appels, sans effet
+ * 0 : <NUMBER> densité du trafic — nombre de véhicules civils
+ *              entretenus autour des joueurs. 0 : aucune circulation.
+ *              -1 : prendre le curseur du menu CBA.
+ * 1 : <NUMBER> densité des habitants — civils ajoutés dans chaque
+ *              agglomération, en plus de ceux déduits des maisons.
+ *              -1 : la moitié de la densité du trafic.
+ * 2 : <BOOL>   poser des habitants et des voitures garées
  * 3 : <NUMBER> rayon d'ambiance autour d'un joueur (m)
- * 4 : <NUMBER> conservé pour les anciens appels, sans effet
- * 5 : <NUMBER> distance d'oubli des habitants (m)
+ * 4 : <NUMBER> portée du trafic (m) — distance maximale d'apparition
+ *              des véhicules. -1 : prendre le curseur du menu CBA.
+ * 5 : <NUMBER> distance d'oubli des civils (m)
  *
  * À lancer avec spawn :
- *   [] spawn fnc_hds_vie_civile;
+ *   [] spawn fnc_hds_vie_civile;                       // tout par défaut
+ *   [12, 6, true, 400, 600, 1400] spawn fnc_hds_vie_civile;
  *
  * ─────────────────────────────────────────────────────────────
- * ── Pourquoi cette version est la bonne ──
- * Les précédentes partaient des localisations déclarées par la carte :
- * on relevait les NameCity et NameVillage, et on peuplait celles dont
- * un joueur s'approchait.
+ * ── Le scénario décide, pas le menu ──
+ * Tout ce qui règle la vie civile doit pouvoir s'écrire dans
+ * init-scenario.sqf, donc sortir du générateur : celui qui fabrique une
+ * mission n'ouvre jamais hdssystem\. Un nombre qui n'existe que dans le
+ * menu CBA est un nombre que le générateur ne peut pas produire.
  *
- * Sur Stratis, les deux seules NameVillage sont au nord-ouest. En
- * jouant au sud, on ne croisait donc strictement personne — et le
- * système n'avait rien à se reprocher, il faisait exactement ce qu'on
- * lui demandait. Le modèle était faux, pas le code.
+ * Or les deux curseurs CBA écrasaient les paramètres de cette fonction,
+ * et ce n'était pas un hasard : dans CBA, le nom d'un réglage EST le nom
+ * de la variable, et CBA la réécrit lui-même. Vérifié dans la source du
+ * mod, cba_settings\XEH_preInit.sqf, événement refreshSetting :
  *
- * Dépendre du nommage d'une carte, c'est dépendre de quelque chose
- * qu'on ne maîtrise pas. On regarde maintenant une seule chose : y
- * a-t-il des maisons autour du joueur ? Si oui, on peuple. Ça marche
- * sur n'importe quelle carte, nommée ou non, y compris un hameau sans
- * nom ou un camp militaire.
+ *     missionNamespace setVariable [_setting, _value];
+ *     ...
+ *     (_this select 0) call (_this select 1);   // puis le script du réglage
+ *
+ * Ce rafraîchissement a lieu au postInit (XEH_postInit.sqf appelle
+ * refreshAllSettings), à chaque chargement de sauvegarde
+ * (addMissionEventHandler "Loaded"), et à chaque diffusion d'un réglage.
+ * Écrire hds_civils_densite depuis le scénario, c'est donc écrire dans
+ * une case qui appartient à CBA : il la reprend quand il veut.
+ *
+ * D'où le découpage. Nos valeurs vivent dans NOS variables :
+ *
+ *     hds_vie_densite    hds_vie_habitants    hds_vie_portee
+ *
+ * Le scénario les pose, et le curseur CBA n'est plus la source mais une
+ * télécommande : on ne le suit que lorsque sa valeur CHANGE, c'est-à-dire
+ * quand quelqu'un l'a bougé en jeu. Un rafraîchissement rend la même
+ * valeur, ne change rien, et le choix du scénario tient.
+ *
+ * ── Pourquoi on suit les joueurs et pas les lieux nommés ──
+ * Les versions précédentes partaient des localisations déclarées par la
+ * carte : on relevait les NameCity et NameVillage, et on peuplait celles
+ * dont un joueur s'approchait.
+ *
+ * Sur Stratis, les deux seules NameVillage sont au nord-ouest. En jouant
+ * au sud, on ne croisait donc strictement personne — et le système
+ * n'avait rien à se reprocher, il faisait exactement ce qu'on lui
+ * demandait. Le modèle était faux, pas le code.
+ *
+ * On regarde maintenant une seule chose : y a-t-il des maisons autour du
+ * joueur ? Si oui, on peuple. Ça marche sur n'importe quelle carte,
+ * nommée ou non, y compris un hameau sans nom. Les localisations ne
+ * décident plus OÙ l'on peuple, seulement COMBIEN.
  *
  * ── Le cycle, toutes les huit secondes ──
  *   1. OUBLI    tout civil d'ambiance dont le joueur le plus proche est
@@ -48,18 +85,19 @@
  * otage, un VIP, un civil posé par une mission, et les véhicules
  * d'Engima — qui gère les siens — ne portent pas cette marque.
  *
- * Le réglage CBA « Population civile » décoché arrête tout.
+ * Le réglage CBA « Population civile » décoché arrête tout : c'est un
+ * coupe-circuit d'administrateur, pas un paramètre de mission.
  */
 
 if (!isServer) exitWith {};
 
 params [
-    ["_densite",          8],
-    ["_peupler",          true],
-    ["_inutilise1",       []],
-    ["_rayonAmbiance",    300],
-    ["_inutilise2",       500],
-    ["_distanceOubli",    1200]
+    ["_densite",       -1],
+    ["_habitants",     -1],
+    ["_peupler",       true],
+    ["_rayonAmbiance", 300],
+    ["_portee",        -1],
+    ["_distanceOubli", 1200]
 ];
 
 if (!canSuspend) exitWith {
@@ -83,11 +121,51 @@ private _classesHom = [_idCiv] call hds_fnc_factionHommes;
     (["aucune", _idCiv] select (_idCiv != "")), count _classesHom
 ]] call hds_fnc_log;
 
-if (isNil "hds_civils_densite") then { hds_civils_densite = _densite };
+// ═══════════════════════════════════════════════════════════
+// LES VALEURS DU SCÉNARIO
+// ═══════════════════════════════════════════════════════════
+// On relève la position des curseurs CBA pour deux raisons : servir de
+// valeur quand le scénario dit -1, et repérer ensuite un mouvement.
+private _cbaDensite = missionNamespace getVariable ["hds_civils_densite", 8];
+private _cbaPortee  = missionNamespace getVariable ["hds_civils_portee", 500];
+
+hds_vie_densite = if (_densite < 0) then { _cbaDensite } else { _densite };
+hds_vie_portee  = if (_portee  < 0) then { _cbaPortee  } else { _portee  };
+
+// Habitants : soit un nombre voulu par le scénario, soit la moitié du
+// trafic. Dans le second cas seulement, ils suivront le curseur si
+// quelqu'un le bouge en jeu — sinon le choix du scénario tient.
+private _habitantsAuto = _habitants < 0;
+hds_vie_habitants = if (_habitantsAuto) then {
+    round (hds_vie_densite / 2)
+} else {
+    _habitants
+};
+
+// ── Le plafond du trafic ──
+// Engima refuse un emplacement à moins de 100 m d'un autre véhicule,
+// dans l'anneau portée×0,6 → portée. Sur une carte comme Stratis, il n'y
+// a pas assez de bitume dans cet anneau pour y caser vingt voitures
+// espacées de 100 m : passé un certain nombre, ses dix tentatives
+// échouent toutes et il ne pose plus rien. Demander 24 véhicules
+// revenait à en obtenir moins qu'en demandant 8.
+//
+// Ce plafond borne donc le FACTEUR DE LIEU, pas le choix du scénario :
+// une mission qui demande 30 véhicules en aura jusqu'à 30, mais une
+// mission qui en demande 8 ne montera pas au-delà de 14 parce qu'un
+// joueur est entré en ville.
+hds_vie_plafond = (round hds_vie_densite) max 14;
+
+["INFO", "CIVILS", format [
+    "reglages retenus : trafic %1, habitants %2, portee %3 m, ambiance %4 m, oubli %5 m (source : %6)",
+    hds_vie_densite, hds_vie_habitants, hds_vie_portee, _rayonAmbiance, _distanceOubli,
+    (["scenario", "menu CBA"] select (_densite < 0))
+]] call hds_fnc_log;
 
 // ═══════════════════════════════════════════════════════════
 // LE TRAFIC : ON PASSE LA MAIN
 // ═══════════════════════════════════════════════════════════
+// Après avoir posé hds_vie_* : ConfigAndStart.sqf les lit au démarrage.
 if (missionNamespace getVariable ["hds_civils_actifs", true]) then {
     if (isNil "fnc_engima_traffic") then {
         ["ALERTE", "CIVILS",
@@ -129,14 +207,13 @@ private _fnSupprimer = {
 };
 
 // ─── Le facteur du lieu ───
-// Un périmètre qui englobe une ville ou un village doit être plus
-// animé qu'un bout de route en rase campagne — plus de circulation ET
-// plus d'habitants. Les localisations déclarées par la carte ne
-// décident donc plus OÙ l'on peuple, mais COMBIEN.
+// Un périmètre qui englobe une ville ou un village doit être plus animé
+// qu'un bout de route en rase campagne — plus de circulation ET plus
+// d'habitants. Les localisations déclarées par la carte ne décident donc
+// plus OÙ l'on peuple, mais COMBIEN.
 //
 // C'est la bonne façon de s'en servir : quand elles manquent, comme au
-// sud de Stratis, on peuple quand même, simplement à la densité de
-// base.
+// sud de Stratis, on peuple quand même, simplement à la densité de base.
 private _fnFacteur = {
     params ["_pos"];
 
@@ -168,8 +245,34 @@ private _recents = [];
 // ═══════════════════════════════════════════════════════════
 while {true} do {
 
+    // ─── La télécommande CBA ───
+    // On ne lit pas le curseur, on surveille s'il a BOUGÉ. Tant qu'il ne
+    // bouge pas, la valeur du scénario tient — y compris après les
+    // rafraîchissements que CBA déclenche tout seul.
+    private _curDensite = missionNamespace getVariable ["hds_civils_densite", _cbaDensite];
+    if (_curDensite != _cbaDensite) then {
+        _cbaDensite = _curDensite;
+        hds_vie_densite = _curDensite;
+        hds_vie_plafond = (round _curDensite) max 14;
+        if (_habitantsAuto) then { hds_vie_habitants = round (_curDensite / 2) };
+
+        ["INFO", "CIVILS", format [
+            "densite changee en jeu : %1 vehicule(s), %2 habitant(s)",
+            _curDensite, hds_vie_habitants
+        ]] call hds_fnc_log;
+    };
+
+    private _curPortee = missionNamespace getVariable ["hds_civils_portee", _cbaPortee];
+    if (_curPortee != _cbaPortee) then {
+        _cbaPortee = _curPortee;
+        hds_vie_portee = _curPortee;
+
+        ["INFO", "CIVILS", format ["portee changee en jeu : %1 m", _curPortee]]
+            call hds_fnc_log;
+    };
+
     private _actif   = missionNamespace getVariable ["hds_civils_actifs", true];
-    private _voulu   = round (missionNamespace getVariable ["hds_civils_densite", _densite]);
+    private _voulu   = round hds_vie_densite;
     private _joueurs = allPlayers select {
         alive _x && { !(_x isKindOf "HeadlessClient_F") }
     };
@@ -218,18 +321,10 @@ while {true} do {
             if (_f > _facteurMax) then { _facteurMax = _f };
         } forEach _joueurs;
 
-        // ── Pourquoi un facteur doux, et un plafond bas ──
-        // FindSpawnSegment refuse tout emplacement a moins de 100 m d'un
-        // autre vehicule, dans l'anneau 300-500 m. Sur une carte comme
-        // Stratis, il n'y a pas assez de bitume dans cet anneau pour y
-        // caser vingt voitures espacees de 100 m : passe un certain
-        // nombre, ses dix tentatives echouent toutes et il ne pose plus
-        // rien du tout.
-        //
-        // Demander 24 vehicules revenait donc a en obtenir moins qu'en
-        // demandant 8. Le facteur reste, mais doux, et plafonne a 14.
-        private _facteurDoux = 1 + ((_facteurMax - 1) * 0.35);
-        private _compteTrafic = ((round (_voulu * _facteurDoux)) max 1) min 14;
+        // Facteur adouci : en ville, +70 % et non +200 %. Le plafond,
+        // lui, ne borne que ce supplément — voir plus haut.
+        private _facteurDoux  = 1 + ((_facteurMax - 1) * 0.35);
+        private _compteTrafic = ((round (_voulu * _facteurDoux)) max 0) min hds_vie_plafond;
 
         if (_compteTrafic != (missionNamespace getVariable ["hds_engima_count", -1])) then {
             hds_engima_count = _compteTrafic;
@@ -271,7 +366,7 @@ while {true} do {
                             // Le facteur du lieu joue aussi sur les
                             // habitants : une ville est plus peuplée
                             // qu'un hameau, à densité demandée égale.
-                            private _plus = round (_voulu * ([_p] call _fnFacteur) / 2);
+                            private _plus = round (hds_vie_habitants * ([_p] call _fnFacteur));
 
                             [_p, _plus, _rayonAmbiance, _idCiv, false]
                                 spawn fnc_occupations_civil_init;

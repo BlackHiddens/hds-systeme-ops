@@ -25,6 +25,31 @@ une mission. Il est volontairement presque vide : le système vit
 ailleurs, et on peut y coller du code généré sans rien casser.
 
 
+TA MISSION T'APPARTIENT
+-----------------------
+Deux fichiers sont à toi, et à toi seul :
+
+  mission.sqm                   ta carte, tes unités, tes marqueurs
+  hdssystem\init-scenario.sqf   le déroulé de ta partie
+
+mission.sqm n'est pas suivi par git, exprès : une mise à jour du
+système ne doit jamais écraser le travail que tu as fait dans
+l'éditeur. Un clone de ce dépôt n'est donc PAS une mission jouable
+telle quelle — il faut y déposer ton propre mission.sqm.
+
+init-scenario.sqf, lui, est fait pour être remplacé en entier. Tout ce
+qui règle une mission s'écrit là : nombre de missions, factions,
+objectifs, renforts, densité de la vie civile… Rien ne demande d'ouvrir
+hdssystem\. Si tu dois modifier le système pour obtenir un réglage,
+c'est le système qui a un défaut.
+
+  outils\generateur-hds-ops.html   le générateur, une page web à ouvrir
+                                   dans un navigateur. Il écrit tout
+                                   init-scenario.sqf pour toi, à partir
+                                   de formulaires ou d'une phrase en
+                                   français.
+
+
 LES MODULES
 -----------
   factions     registre construit à chaud depuis CfgGroups, CfgVehicles
@@ -46,7 +71,16 @@ RÉGLAGES EN JEU
 ---------------
 Échap → Options → Options des addons → catégorie HDS :
 mode debug, niveau du journal, scan des factions, faction forcée,
-population civile. Tout prend effet immédiatement.
+population civile, densité et portée du trafic civil. Tout prend effet
+immédiatement.
+
+Ce menu n'est pas la configuration de la mission — celle-ci est dans
+init-scenario.sqf. C'est un tableau de bord d'administrateur : couper
+la vie civile sur un serveur qui rame, monter le journal pour
+comprendre un bug, rattraper une circulation trop maigre sans relancer
+la partie. Les deux curseurs de trafic ne font que corriger ce que le
+scénario a demandé : tant que personne n'y touche, c'est le scénario
+qui décide.
 
 Le mode debug vaut « AUTO » par défaut : allumé quand tu héberges la
 mission toi-même, éteint sur un serveur dédié. Rien à désactiver avant

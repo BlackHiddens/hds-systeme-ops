@@ -96,6 +96,13 @@ ENGIMA_TRAFFIC_StartTraffic = {
 	    // changement prend effet au tour suivant sans rien casser.
 	    _vehicleCount = missionNamespace getVariable ["hds_engima_count", _vehicleCount];
 
+	    // MIN/MAX_SPAWN_DISTANCE etaient eux aussi lus une seule fois.
+	    // La portee vient du scenario (hds_vie_portee) et le menu CBA
+	    // peut la bouger en cours de partie : on la relit ici, sinon le
+	    // curseur ne servirait a rien une fois la mission lancee.
+	    _maxSpawnDistance = missionNamespace getVariable ["hds_vie_portee", _maxSpawnDistance];
+	    _minSpawnDistance = round (_maxSpawnDistance * 0.6);
+
 		_allPlayerPositionsTemp = [];
 		if (isMultiplayer) then {
 			{

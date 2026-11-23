@@ -1,0 +1,3029 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Générateur de mission hds-ops</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Tableau de bord : un parcours en trois temps en haut, la configuration à
+   gauche, le résultat qui reste en vue à droite. Cartes à en-tête séparé,
+   gris neutres et un seul bleu d'action — la grammaire des tableaux de bord
+   Keenthemes. */
+:root {
+  --bg: #f9f9f9;
+  --surface: #ffffff;
+  --surface-2: #fcfcfc;
+  --ink: #071437;
+  --ink-2: #4b5675;
+  --muted: #78829d;
+  --line: #f1f1f4;
+  --line-strong: #dbdfe9;
+  --chip: #f1f1f4;
+  --accent: #1b84ff;
+  --accent-strong: #056ee9;
+  --accent-ink: #ffffff;
+  --accent-soft: #eff6ff;
+  --ring: rgba(27, 132, 255, 0.16);
+  --danger: #f8285a;
+  --danger-soft: #fff5f8;
+  --warn: #c79500;
+  --warn-soft: #fff8dd;
+  --ok: #17c653;
+  --ok-soft: #eafff1;
+  --code-bg: #f9f9f9;
+  --c-comment: #78829d;
+  --c-string: #c7691a;
+  --c-func: #056ee9;
+  --c-kw: #7239ea;
+  --c-num: #0b9b43;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r: 12px;
+  --r-s: 8px;
+  --r-xs: 6px;
+  --shadow-s: 0 3px 4px rgba(7, 20, 55, 0.03);
+  --shadow-m: 0 4px 12px rgba(7, 20, 55, 0.06), 0 1px 2px rgba(7, 20, 55, 0.04);
+  --shadow-l: 0 10px 30px rgba(7, 20, 55, 0.12);
+  --ease: cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d0e12; --surface: #15171c; --surface-2: #1b1d23; --ink: #f0f1f4; --ink-2: #b5b7c8;
+    --muted: #868a9b; --line: #22242c; --line-strong: #2d2f39; --chip: #22242c;
+    --accent: #1b84ff; --accent-strong: #4fa3ff; --accent-ink: #ffffff; --accent-soft: #15243a; --ring: rgba(27, 132, 255, 0.3);
+    --danger: #ff6b8c; --danger-soft: #2c1620; --warn: #f6b100; --warn-soft: #2e2512;
+    --ok: #35d46f; --ok-soft: #10281a; --code-bg: #101216;
+    --c-comment: #7c8192; --c-string: #e5a263; --c-func: #68a8ff; --c-kw: #bd93f0; --c-num: #58d184;
+    --shadow-s: none; --shadow-m: 0 4px 14px rgba(0, 0, 0, 0.45); --shadow-l: 0 14px 36px rgba(0, 0, 0, 0.55);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d0e12; --surface: #15171c; --surface-2: #1b1d23; --ink: #f0f1f4; --ink-2: #b5b7c8;
+  --muted: #868a9b; --line: #22242c; --line-strong: #2d2f39; --chip: #22242c;
+  --accent: #1b84ff; --accent-strong: #4fa3ff; --accent-ink: #ffffff; --accent-soft: #15243a; --ring: rgba(27, 132, 255, 0.3);
+  --danger: #ff6b8c; --danger-soft: #2c1620; --warn: #f6b100; --warn-soft: #2e2512;
+  --ok: #35d46f; --ok-soft: #10281a; --code-bg: #101216;
+  --c-comment: #7c8192; --c-string: #e5a263; --c-func: #68a8ff; --c-kw: #bd93f0; --c-num: #58d184;
+  --shadow-s: none; --shadow-m: 0 4px 14px rgba(0, 0, 0, 0.45); --shadow-l: 0 14px 36px rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 14px/1.55 var(--font);
+  -webkit-font-smoothing: antialiased;
+  padding-block: 26px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+[hidden] { display: none !important; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+h1, h2, h3, p { margin: 0; }
+b, strong { font-weight: 600; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app { max-width: 1180px; margin: 0 auto; }
+
+/* ---------- en-tête ---------- */
+.top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+.top-id { min-width: 0; }
+h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; font-size: 20px; font-weight: 600; letter-spacing: -0.015em; }
+.brand { font: 500 11px/1 var(--mono); color: var(--accent-strong); background: var(--accent-soft); padding: 5px 8px; border-radius: var(--r-xs); letter-spacing: 0; }
+.top-s { margin-top: 5px; font-size: 13.5px; color: var(--muted); max-width: 62ch; }
+.seg { position: relative; display: inline-grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px; background: var(--chip); border-radius: var(--r-s); }
+.seg button { position: relative; z-index: 1; min-width: 148px; padding: 8px 16px; border: 0; background: none; border-radius: var(--r-xs); font-size: 13.5px; font-weight: 500; color: var(--muted); transition: color 0.18s; }
+.seg button[aria-selected="true"] { color: var(--ink); font-weight: 600; }
+.seg-thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); background: var(--surface); border-radius: var(--r-xs); box-shadow: var(--shadow-s), 0 1px 3px rgba(7, 20, 55, 0.08); transition: transform 0.28s var(--ease); }
+.seg[data-mode="prive"] .seg-thumb { transform: translateX(100%); }
+
+/* ---------- parcours en trois temps ---------- */
+/* L'ordre est l'information : on écrit, on vérifie, on copie. Le pas en
+   cours est marqué, les précédents sont cochés. */
+.flow { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 18px; padding: 0; }
+.flow-i { position: relative; display: flex; align-items: center; gap: 11px; min-width: 0; padding: 13px 15px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-s); transition: border-color 0.2s, box-shadow 0.2s; }
+.flow-b { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--chip); color: var(--muted); font: 600 12.5px/1 var(--font); font-variant-numeric: tabular-nums; transition: background-color 0.2s, color 0.2s; }
+.flow-x { min-width: 0; display: flex; flex-direction: column; }
+.flow-x strong { font-size: 13.5px; font-weight: 600; }
+.flow-x em { font-style: normal; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.flow-i.on { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.flow-i.on .flow-b { background: var(--accent); color: var(--accent-ink); }
+.flow-i.done .flow-b { background: var(--ok-soft); color: var(--ok); }
+.flow-i.done .flow-b::after { content: "\2713"; }
+.flow-i.done .flow-n { display: none; }
+
+/* ---------- grille ---------- */
+.cols { display: grid; grid-template-columns: minmax(0, 1.06fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.col-main { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 0; box-shadow: var(--shadow-s); min-width: 0; animation: rise 0.3s var(--ease) backwards; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.ch-t { min-width: 0; }
+.card-head h2, .fold-t { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+.card-sub { margin-top: 3px; font-size: 13px; color: var(--muted); }
+.card-b { padding: 20px; }
+
+/* ---------- champs ---------- */
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 14px; }
+.f { min-width: 0; }
+.f-wide { grid-column: 1 / -1; }
+.lab { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12.5px; font-weight: 500; color: var(--ink-2); }
+.lab label, .lab .lab-t { font-weight: 500; }
+input[type="text"], input[type="number"], select, textarea {
+  width: 100%; padding: 9px 12px; font-size: 13.5px; background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: var(--r-s);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input[type="text"]::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.75; }
+input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+input:disabled, select:disabled { opacity: 0.45; }
+textarea { resize: vertical; line-height: 1.55; }
+.invalid { border-color: var(--danger) !important; background: var(--danger-soft) !important; }
+.err { margin-top: 5px; font-size: 12px; font-weight: 500; color: var(--danger); }
+
+/* interrupteur */
+.f-sw { display: flex; align-items: center; gap: 8px; min-height: 38px; }
+.f-sw .err { flex-basis: 100%; margin-top: 0; }
+.sw { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13.5px; font-weight: 500; }
+.sw input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.knob { position: relative; flex: none; width: 36px; height: 20px; border-radius: 999px; background: var(--line-strong); transition: background-color 0.2s; }
+.knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: transform 0.22s var(--ease); }
+.sw input:checked + .knob { background: var(--accent); }
+.sw input:checked + .knob::after { transform: translateX(16px); }
+.sw input:focus-visible + .knob { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* pastilles de choix */
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; cursor: pointer; margin: 0; }
+.chip span { display: block; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: var(--r-xs); font-size: 13px; font-weight: 500; color: var(--ink-2); transition: background-color 0.15s, border-color 0.15s, color 0.15s; }
+.chip input:checked + span { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
+.chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* infobulle */
+.tip { flex: none; display: inline-grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 1px solid var(--line-strong); border-radius: 50%; background: transparent; font: 600 11px/1 var(--font); color: var(--muted); transition: color 0.15s, border-color 0.15s, background-color 0.15s; }
+.tip:hover, .tip:focus-visible { color: var(--accent-strong); border-color: var(--accent); background: var(--accent-soft); }
+#tipbox { position: fixed; z-index: 60; max-width: min(320px, calc(100vw - 16px)); padding: 10px 12px; font-size: 12.5px; line-height: 1.5; color: #f6f7f9; background: #1e2029; border-radius: var(--r-s); box-shadow: var(--shadow-l); pointer-events: none; }
+
+/* boutons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 16px; border: 1px solid transparent; border-radius: var(--r-s); font-size: 13.5px; font-weight: 600; background: var(--accent); color: var(--accent-ink); transition: background-color 0.15s, box-shadow 0.15s, transform 0.1s; }
+.btn:hover { background: var(--accent-strong); }
+.btn:active { transform: translateY(1px); }
+.btn-lg { padding: 12px 22px; font-size: 14.5px; box-shadow: 0 4px 10px rgba(27, 132, 255, 0.22); }
+.btn-lg:hover { box-shadow: 0 6px 16px rgba(27, 132, 255, 0.3); }
+.btn-soft { background: var(--accent-soft); color: var(--accent-strong); }
+.btn-soft:hover { background: var(--chip); }
+.btn-ghost { background: var(--surface); color: var(--ink-2); border-color: var(--line-strong); font-weight: 500; }
+.btn-ghost:hover { background: var(--chip); color: var(--ink); }
+.btn:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+.btn-sm { padding: 7px 12px; font-size: 13px; }
+.link { background: none; border: 0; padding: 0; color: var(--accent-strong); font-size: 12.5px; font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.note { font-size: 12.5px; color: var(--muted); }
+.note.bad { color: var(--danger); font-weight: 500; }
+
+/* ---------- repli animé ---------- */
+.acc { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.28s var(--ease); }
+.acc.open { grid-template-rows: 1fr; }
+.acc-in { overflow: hidden; min-height: 0; }
+.fold { padding: 0; }
+.fold-h { width: 100%; display: flex; align-items: center; gap: 12px; padding: 15px 20px; border: 0; background: none; text-align: left; border-radius: var(--r); }
+.fold-h:hover { background: var(--surface-2); }
+.fold-h[aria-expanded="true"] { border-bottom: 1px solid var(--line); border-radius: var(--r) var(--r) 0 0; }
+.fold-s { margin-left: auto; font-size: 12.5px; color: var(--muted); }
+.chev { flex: none; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg) translate(-2px, -2px); transition: transform 0.25s var(--ease); }
+[aria-expanded="true"] > .chev, [aria-expanded="true"] .chev { transform: rotate(225deg) translate(-2px, -2px); }
+.fold-body { padding: 18px 20px 20px; }
+
+/* ---------- décrire la mission ---------- */
+.describe textarea { min-height: 84px; font-size: 14px; }
+.helper { margin-top: 8px; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+.helper b { color: var(--ink-2); font-weight: 600; }
+.ex { margin-top: 14px; }
+.ex-l { display: block; margin-bottom: 7px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.ex-b { padding: 6px 12px; border: 1px dashed var(--line-strong); border-radius: var(--r-xs); background: var(--surface); font-size: 12.5px; font-weight: 500; color: var(--ink-2); transition: border-color 0.15s, background-color 0.15s, color 0.15s; }
+.ex-b:hover { border-style: solid; border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+.act { margin-top: 18px; }
+.alt { margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line-strong); }
+.alt-t { margin-bottom: 9px; font-size: 12.5px; color: var(--muted); }
+.ai-flow { display: grid; gap: 14px; padding-top: 16px; }
+.ai-row { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 11px; align-items: start; font-size: 13.5px; }
+.ai-n { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--chip); font: 600 11.5px/1 var(--font); color: var(--ink-2); }
+.ai-row .row { margin-top: 8px; }
+.ai-row textarea { margin-top: 8px; min-height: 80px; font: 12px/1.55 var(--mono); }
+#aiPromptBox { margin-top: 8px; height: 148px; font: 11.5px/1.5 var(--mono); white-space: pre; }
+.preview { margin-top: 16px; padding: 16px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r); animation: rise 0.25s var(--ease) backwards; }
+.preview h3 { margin: 0 0 3px; font-size: 14px; font-weight: 600; }
+.pv-notes, .pv-list { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--muted); }
+.pv-list.bad { color: var(--danger); }
+.pv-miss { margin-top: 10px; font-size: 12.5px; color: var(--warn); }
+.preview .row { margin-top: 14px; }
+.preview details { margin-top: 10px; font-size: 12.5px; }
+.preview summary { cursor: pointer; color: var(--muted); }
+
+/* ---------- étapes ---------- */
+.addwrap { position: relative; z-index: 20; }
+#paneSteps { position: relative; z-index: 5; }
+.menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; width: min(340px, calc(100vw - 32px)); max-height: min(70vh, 460px); overflow: auto; padding: 8px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r); box-shadow: var(--shadow-l); animation: rise 0.18s var(--ease) backwards; }
+.menu-t { padding: 10px 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.menu-i { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: var(--r-xs); background: none; text-align: left; font-size: 13.5px; }
+.menu-i:hover, .menu-i:focus-visible { background: var(--accent-soft); color: var(--accent-strong); outline: none; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.step { border: 1px solid var(--line-strong); border-radius: var(--r); background: var(--surface); transition: border-color 0.2s, box-shadow 0.2s; animation: rise 0.25s var(--ease) backwards; }
+.step.open { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.step-head { display: flex; align-items: center; gap: 4px; padding: 5px 7px 5px 5px; }
+.step-toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: 11px; padding: 7px 8px; border: 0; background: none; text-align: left; border-radius: var(--r-s); }
+.step-toggle:hover { background: var(--surface-2); }
+.num { flex: none; display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: var(--chip); color: var(--ink-2); font: 600 12px/1 var(--font); font-variant-numeric: tabular-nums; transition: background-color 0.2s, color 0.2s; }
+.step.open .num { background: var(--accent); color: var(--accent-ink); }
+.step-toggle.bad .num { background: var(--danger); color: #fff; }
+.ttl { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ttl strong { font-size: 14px; font-weight: 600; }
+.sum { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sum:empty { display: none; }
+.step-toggle.bad .sum { color: var(--danger); }
+.tools { display: flex; align-items: center; gap: 2px; opacity: 0; transition: opacity 0.15s; }
+.step:hover .tools, .step:focus-within .tools, .step.open .tools { opacity: 1; }
+@media (hover: none) { .tools { opacity: 1; } }
+.ico { display: grid; place-items: center; width: 29px; height: 29px; padding: 0; border: 0; border-radius: var(--r-xs); background: none; color: var(--muted); font-size: 14px; line-height: 1; transition: background-color 0.15s, color 0.15s; }
+.ico:hover:not(:disabled) { background: var(--chip); color: var(--ink); }
+.ico:disabled { opacity: 0.3; cursor: default; }
+.ico.del:hover:not(:disabled) { background: var(--danger-soft); color: var(--danger); }
+.step-body { padding: 4px 15px 17px; }
+.more { margin-top: 16px; }
+.more-h { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: none; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.more-h:hover { color: var(--ink); }
+.more .fields { padding-top: 14px; }
+.wait { margin-top: 16px; padding: 13px 14px; border-radius: var(--r-s); background: var(--accent-soft); }
+.wait .sw { font-weight: 500; }
+.wait-n { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; padding-left: 46px; font-size: 12.5px; color: var(--ink-2); }
+.wait-n input { width: 64px; padding: 6px 8px; font-size: 13.5px; text-align: center; }
+.wait .err { margin-left: 46px; }
+.hint-last { margin-top: 8px; padding-left: 46px; font-size: 12px; color: var(--muted); }
+.joint { list-style: none; display: flex; justify-content: center; margin: -1px 0; }
+.joint span { padding: 3px 11px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); font-size: 11.5px; font-weight: 600; }
+.empty { padding: 32px 18px; text-align: center; color: var(--muted); font-size: 13.5px; background: var(--surface-2); border: 1px dashed var(--line-strong); border-radius: var(--r); }
+
+/* ---------- résultat ---------- */
+.out { position: sticky; top: max(16px, env(safe-area-inset-top, 0px)); max-height: calc(100vh - 32px); display: flex; flex-direction: column; padding: 0; overflow: hidden; box-shadow: var(--shadow-m); }
+.out-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px 0 18px; border-bottom: 1px solid var(--line); }
+.tabs { display: flex; gap: 18px; }
+.tabs button { padding: 8px 0 11px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; font-size: 13.5px; font-weight: 500; color: var(--muted); transition: color 0.2s, border-color 0.2s; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--accent-strong); font-weight: 600; border-bottom-color: var(--accent); }
+.pill { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 8px; padding: 5px 10px; border: 0; border-radius: var(--r-xs); background: var(--ok-soft); color: var(--ok); font-size: 12px; font-weight: 600; transition: background-color 0.2s, color 0.2s; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill:disabled { cursor: default; }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--danger-soft); color: var(--danger); }
+.out-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 18px; }
+.out-body > section { animation: rise 0.25s var(--ease) backwards; }
+.issues { flex: none; max-height: 130px; overflow: auto; margin: 0; padding: 11px 18px 11px 34px; border-top: 1px solid var(--line); background: var(--danger-soft); font-size: 12.5px; color: var(--danger); }
+.issues.warn { background: var(--warn-soft); color: var(--warn); }
+.issues li { margin: 3px 0; }
+.issues .issue { padding: 0; border: 0; background: none; color: inherit; text-align: left; text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+.out-foot { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 18px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.out-file { font: 11.5px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+
+/* ---------- ce qu'il faut faire du résultat ---------- */
+.lead { margin-bottom: 12px; font-size: 12.5px; color: var(--muted); }
+.howto { list-style: none; counter-reset: h; display: grid; gap: 7px; margin: 0 0 14px; padding: 13px 15px; background: var(--accent-soft); border-radius: var(--r-s); }
+.howto li { counter-increment: h; position: relative; padding-left: 26px; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+.howto li::before { content: counter(h); position: absolute; left: 0; top: 0.5px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font: 600 10.5px/1 var(--font); }
+.howto b { color: var(--ink); }
+.path { padding: 1px 6px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line-strong); font: 11.5px var(--mono); overflow-wrap: anywhere; }
+
+.clair-sub { font-size: 13px; color: var(--muted); }
+.clair-ctx { margin-top: 4px; font-size: 13px; color: var(--ink-2); }
+.d-steps { margin: 14px 0 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 13px; }
+.d-steps li { counter-increment: s; position: relative; padding-left: 34px; font-size: 13.5px; }
+.d-steps li::before { content: counter(s); position: absolute; left: 0; top: 1px; display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: var(--chip); color: var(--ink-2); font: 600 11.5px/1 var(--font); }
+.d-steps strong { display: block; margin-bottom: 1px; font-weight: 600; }
+.d-wait { display: block; margin-top: 5px; font-size: 12px; font-weight: 500; color: var(--accent-strong); }
+.d-empty { margin-top: 14px; color: var(--muted); font-size: 13.5px; }
+.d-objs { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line-strong); font-size: 12.5px; color: var(--muted); }
+.d-objs .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.d-objs code, .idents code { padding: 2px 7px; border-radius: 4px; background: var(--chip); font: 11.5px var(--mono); color: var(--ink); }
+.d-wrap { min-width: 0; }
+.idents { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.text { min-width: 0; }
+.code-file { margin-bottom: 9px; font: 11.5px var(--mono); color: var(--muted); }
+pre.code { margin: 0; padding: 14px 15px; background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--r-s); font: 400 12px/1.7 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; font-variant-ligatures: none; tab-size: 2; }
+.tk-c { color: var(--c-comment); font-style: italic; }
+.tk-s { color: var(--c-string); }
+.tk-f { color: var(--c-func); font-weight: 500; }
+.tk-k { color: var(--c-kw); }
+.tk-n { color: var(--c-num); }
+
+/* ---------- retours ---------- */
+#toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 70; padding: 11px 18px; border-radius: var(--r-s); background: #1e2029; color: #f6f7f9; font-size: 13.5px; font-weight: 500; box-shadow: var(--shadow-l); opacity: 0; transform: translate(-50%, 12px); pointer-events: none; transition: opacity 0.2s, transform 0.25s var(--ease); }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+.bar { display: none; }
+
+@media (max-width: 1000px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .out { position: static; max-height: none; overflow: visible; }
+  .out-body { overflow: visible; }
+}
+@media (max-width: 700px) {
+  .flow { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .flow-x em { white-space: normal; }
+  .seg { width: 100%; }
+  .seg button { min-width: 0; }
+  .fields { grid-template-columns: minmax(0, 1fr); }
+  .card-head { flex-wrap: wrap; }
+  .bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; gap: 12px; align-items: center; padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(7, 20, 55, 0.08); }
+  .bar .btn { flex: 1; }
+  .out-foot .btn { display: none; }
+  body { padding-bottom: 92px; }
+  #toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="top-id">
+      <h1>Générateur de mission <span class="brand">hds-ops</span></h1>
+      <p class="top-s">Décris ta mission en français, vérifie les étapes, copie le code dans ta mission Arma 3. Rien à installer.</p>
+    </div>
+    <div class="seg" id="seg" role="tablist" aria-label="Type de mission" data-mode="public">
+      <span class="seg-thumb" aria-hidden="true"></span>
+      <button type="button" role="tab" id="modePublic" aria-selected="true">Mission publique</button>
+      <button type="button" role="tab" id="modePrive" aria-selected="false">Scénario privé</button>
+    </div>
+  </header>
+
+  <ol class="flow" id="flow" aria-label="Les trois temps">
+    <li class="flow-i on" id="flow1">
+      <span class="flow-b"><span class="flow-n">1</span></span>
+      <span class="flow-x"><strong id="flow1t">Écris ta mission</strong><em id="flow1s">une ou deux phrases suffisent</em></span>
+    </li>
+    <li class="flow-i" id="flow2">
+      <span class="flow-b"><span class="flow-n">2</span></span>
+      <span class="flow-x"><strong>Vérifie les étapes</strong><em>coordonnées, factions, nombres</em></span>
+    </li>
+    <li class="flow-i" id="flow3">
+      <span class="flow-b"><span class="flow-n">3</span></span>
+      <span class="flow-x"><strong>Copie le code</strong><em>dans init-scenario.sqf</em></span>
+    </li>
+  </ol>
+
+  <main class="cols">
+    <div class="col-main">
+      <!-- Mission publique : quelques réglages, pas de description -->
+      <section class="card" id="panePublic" aria-labelledby="hPub">
+        <div class="card-head">
+          <div class="ch-t">
+            <h2 id="hPub">Missions automatiques</h2>
+            <p class="card-sub">Le serveur enchaîne des missions tout seul, sans scénario écrit. Règle la taille, la faction et la difficulté, puis copie le code.</p>
+          </div>
+        </div>
+        <div class="card-b">
+          <div class="fields" id="pubFields"></div>
+          <div class="more" id="pubMore"></div>
+        </div>
+      </section>
+
+      <!-- Scénario privé : décrire, puis ajuster les étapes -->
+      <section class="card describe" id="paneDescribe" aria-labelledby="hDesc" hidden>
+        <div class="card-head">
+          <div class="ch-t">
+            <h2 id="hDesc">1 · Écris ta mission</h2>
+            <p class="card-sub">En français, comme tu l'expliquerais à ton groupe. Puis clique sur « Créer les étapes ».</p>
+          </div>
+          <button type="button" class="tip" aria-label="Aide" data-tip="Écris des phrases courtes, par exemple : « libérer deux otages en 4506, 5729, puis contre-attaque afghane ». « Puis » enchaîne les étapes, « en même temps » les lance ensemble. Réglages compris : « 3 appels de renfort », « pas de trafic civil ». Pour une histoire plus complexe, utilise « Avec une IA ».">i</button>
+        </div>
+        <div class="card-b">
+          <div class="lab"><label for="aiText">Ce que les joueurs doivent faire</label></div>
+          <textarea id="aiText" rows="3" placeholder="Ex : libérer deux pilotes en 4506, 5729, puis repousser une contre-attaque afghane. 3 appels de renfort."></textarea>
+          <p class="helper"><b>puis</b> enchaîne deux étapes · <b>en même temps</b> les lance ensemble · les coordonnées se relèvent dans l'éditeur Arma (<b>4506, 5729</b>) · dis le nombre de renforts si tu en veux</p>
+
+          <div class="ex">
+            <span class="ex-l">Clique un exemple pour le remplir</span>
+            <div class="chips">
+              <button type="button" class="ex-b" data-ex="Libérer deux pilotes otages en 4506, 5729 et les ramener à la base en 4847, 4598. Ensuite la milice afghane contre-attaque la base avec 2 groupes et 5 véhicules. 3 appels de renfort, pas de vie civile.">Otages, puis contre-attaque</button>
+              <button type="button" class="ex-b" data-ex="Occuper le village en 4349, 3809 avec des Russes, puis sécuriser la zone. En même temps, surveiller la région sur 500 m.">Occuper, puis sécuriser</button>
+              <button type="button" class="ex-b" data-ex="Détruire une cache d'armes en 3200, 5400, puis collecter des renseignements sur place. 5 appels de renfort.">Détruire, puis collecter</button>
+            </div>
+          </div>
+
+          <div class="row act">
+            <button type="button" class="btn btn-lg" id="aiLocal">Créer les étapes</button>
+            <span class="note" id="aiStatus" role="status"></span>
+          </div>
+
+          <div class="alt">
+            <p class="alt-t">Mission compliquée, ou tu veux une histoire plus riche ? Fais-la écrire par une IA, puis colle sa réponse ici.</p>
+            <div class="row">
+              <button type="button" class="btn btn-ghost btn-sm" id="aiToggle" aria-expanded="false">Avec une IA</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="aiClaude" hidden>Générer avec Claude</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="aiCancel" hidden>Annuler</button>
+            </div>
+            <div class="acc" id="aiAcc">
+              <div class="acc-in">
+                <div class="ai-flow">
+                  <div class="ai-row"><span class="ai-n">1</span><div>Copie le prompt
+                    <div class="row"><button type="button" class="btn btn-soft btn-sm" id="aiCopyPrompt">Copier le prompt</button><button type="button" class="link" id="aiViewPrompt">Voir le texte</button></div>
+                    <textarea id="aiPromptBox" readonly spellcheck="false" aria-label="Prompt à copier" hidden></textarea>
+                  </div></div>
+                  <div class="ai-row"><span class="ai-n">2</span><div>Colle-le dans l'IA de ton choix</div></div>
+                  <div class="ai-row"><span class="ai-n">3</span><div>Colle sa réponse
+                    <textarea id="aiAnswer" spellcheck="false" aria-label="Réponse de l'IA" placeholder="Le bloc JSON de l'IA"></textarea>
+                    <div class="row"><button type="button" class="btn btn-soft btn-sm" id="aiRead">Lire la réponse</button></div>
+                  </div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="preview" id="aiPreview" hidden></div>
+        </div>
+      </section>
+
+      <section class="card" id="paneSteps" aria-labelledby="hSteps" hidden>
+        <div class="card-head">
+          <div class="ch-t">
+            <h2 id="hSteps">2 · Vérifie les étapes</h2>
+            <p class="card-sub">Clique une étape pour l'ouvrir et corriger ce qui a été deviné. Un numéro rouge signale un champ à remplir.</p>
+          </div>
+          <div class="addwrap">
+            <button type="button" class="btn btn-soft btn-sm" id="addBtn" aria-haspopup="true" aria-expanded="false">+ Ajouter</button>
+            <div class="menu" id="addMenu" hidden></div>
+          </div>
+        </div>
+        <div class="card-b">
+          <ol class="steps" id="steps"></ol>
+        </div>
+      </section>
+
+      <!-- Communs aux deux types -->
+      <section class="card fold" id="foldCtx">
+        <button type="button" class="fold-h" id="ctxH" aria-expanded="false"><span class="fold-t">Réglages de départ</span><span class="fold-s" id="ctxSum"></span><span class="chev" aria-hidden="true"></span></button>
+        <div class="acc" id="ctxAcc"><div class="acc-in"><div class="fold-body"><div class="fields" id="ctx"></div></div></div></div>
+      </section>
+      <section class="card fold" id="foldReg">
+        <button type="button" class="fold-h" id="regH" aria-expanded="false"><span class="fold-t">Registre du serveur</span><span class="fold-s" id="regSum"></span><span class="chev" aria-hidden="true"></span></button>
+        <div class="acc" id="regAcc"><div class="acc-in"><div class="fold-body">
+          <p class="note" id="regNote"></p>
+          <textarea id="regBox" rows="3" spellcheck="false" aria-label="Registre exporté par le serveur" placeholder="Colle ici ce que donne « Copier le registre des factions » en jeu"></textarea>
+          <div class="row">
+            <button type="button" class="btn btn-sm" id="regImport">Importer le registre</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="regForget" hidden>Revenir aux factions par défaut</button>
+            <span class="note" id="regStatus" role="status"></span>
+          </div>
+        </div></div></div>
+      </section>
+      <section class="card fold" id="foldParams">
+        <button type="button" class="fold-h" id="parH" aria-expanded="false"><span class="fold-t">Joueurs et objets</span><span class="fold-s">facultatif</span><span class="chev" aria-hidden="true"></span></button>
+        <div class="acc" id="parAcc"><div class="acc-in"><div class="fold-body">
+          <div class="lab"><span class="lab-t">Noms donnés dans l'éditeur</span><button type="button" class="tip" id="parTip" aria-label="Aide" data-tip="Le champ « Nom de variable » de l'éditeur. Sépare les noms par des virgules : les guillemets sont ajoutés pour toi.">i</button></div>
+          <div class="fields" id="params"></div>
+        </div></div></div>
+      </section>
+    </div>
+
+    <aside class="card out" id="out" aria-label="Résultat">
+      <div class="out-top">
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tabClair" aria-selected="true">En clair</button>
+          <button type="button" role="tab" id="tabCode" aria-selected="false">Code</button>
+          <button type="button" role="tab" id="tabParams" aria-selected="false">Joueurs</button>
+        </div>
+        <button type="button" class="pill" id="pill" aria-expanded="false">Prêt</button>
+      </div>
+      <div class="out-body">
+        <section id="paneClair" aria-label="Ta mission en clair">
+          <p class="lead">Relis ta mission avant de copier. Si une phrase ne dit pas ce que tu voulais, corrige l'étape à gauche.</p>
+          <p class="clair-sub" id="brief"></p>
+          <p class="clair-ctx" id="clairCtx"></p>
+          <div id="desc"></div>
+        </section>
+        <section id="paneCode" aria-label="Code du scénario" hidden>
+          <ol class="howto">
+            <li>Clique <b>Copier le code</b>, en bas</li>
+            <li>Ouvre <code class="path">hdssystem\init-scenario.sqf</code> dans ta mission</li>
+            <li><b>Remplace tout</b> le contenu du fichier — il ne contient que ta mission, jamais le système</li>
+            <li>Recharge la mission dans Arma</li>
+          </ol>
+          <p class="code-file">hdssystem\init-scenario.sqf</p>
+          <pre class="code" id="code-scenario" tabindex="0"></pre>
+        </section>
+        <section id="paneParamsOut" aria-label="Code des joueurs et objets" hidden>
+          <ol class="howto">
+            <li>Clique <b>Copier le code</b>, en bas</li>
+            <li>Ouvre <code class="path">mes-parametres.sqf</code> dans ta mission</li>
+            <li>Remplace les lignes de même nom — <b>garde le reste du fichier</b></li>
+          </ol>
+          <p class="code-file">mes-parametres.sqf</p>
+          <pre class="code" id="code-params" tabindex="0"></pre>
+        </section>
+      </div>
+      <ul class="issues" id="issues" hidden></ul>
+      <div class="out-foot">
+        <span class="out-file" id="outFile">init-scenario.sqf</span>
+        <button type="button" class="btn" id="copy">Copier le code</button>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="bar" id="bar"><button type="button" class="btn" id="copyBar">Copier le code</button></div>
+<div id="tipbox" role="tooltip" hidden></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+/* ====== Logique pure du générateur hds-ops (aucun accès au DOM) ====== */
+
+const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/* Factions par défaut : les anciens index 0-7 du système HDS. Elles
+   restent la liste de secours quand aucun registre n'a été importé. */
+const FACTIONS_DEFAUT = [
+  [0, 'CSAT', ''],
+  [1, 'AAF', ''],
+  [2, 'Américains (alliés)', ''],
+  [3, 'FIA', ''],
+  [4, 'Boko Haram', 'Project OPFOR'],
+  [5, 'Russes', 'RHS AFRF'],
+  [6, 'Afghans', 'Project OPFOR'],
+  [7, 'État islamique', 'Project OPFOR'],
+];
+
+/* Ancien index -> id de faction. C'est la même table que
+   hds_factions_legacy côté SQF : elle sert à traduire ce que la
+   reconnaissance de texte trouve (« russes », « afghans »…) vers l'id
+   réellement présent sur le serveur. */
+const LEGACY_IDS = ['OPF_F', 'IND_F', 'BLU_F', 'OPF_G_F', 'LOP_BH', 'rhs_faction_msv', 'LOP_AM_OPF', 'LOP_ISTS_OPF'];
+
+const CAMP_LABEL = { EAST: 'OPFOR', WEST: 'BLUFOR', INDEP: 'Indépendants', CIV: 'Civils' };
+
+let FACTIONS = FACTIONS_DEFAUT.slice();
+let REGISTRE = null;
+const LOCS = [
+  ['NameVillage', 'Village'],
+  ['NameCity', 'Ville'],
+  ['NameLocal', 'Lieu particulier'],
+  ['Name', 'Lieu commun'],
+  ['Strategic', 'Base militaire'],
+];
+const CAMPS = [
+  ['west', 'BLUFOR (west)'],
+  ['east', 'OPFOR (east)'],
+  ['independent', 'Indépendants'],
+];
+function fname(n) {
+  const f = FACTIONS.find((x) => String(x[0]) === String(n));
+  return f ? f[1] : 'faction ?';
+}
+
+/* ---------- registre de factions exporté par le serveur ----------
+   Le serveur HDS découvre ses factions dans la config d'Arma au
+   démarrage (module hdssystem\modules\factions) et sait les exporter
+   en JSON. En jeu : molette -> « Copier le registre des factions ».
+
+   Sans registre, on garde les 8 index d'origine. Avec, les champs
+   « faction » émettent l'id exact ("rhs_faction_msv"), ce qui rend la
+   mission portable : sur un serveur sans ce mod, le script retombe de
+   lui-même sur une faction du même camp. */
+/* Arma écrit le presse-papier en octets UTF-8, que Windows relit en
+   Windows-1252 : « Armée » arrive en « ArmÃ©e ». On répare ici, à la
+   lecture, plutôt que de demander au serveur d'abîmer ses propres noms.
+
+   Prudent par construction : on n'essaie que si la chaîne porte les
+   marques du problème (Ã ou Â), que tous ses points de code tiennent
+   sur un octet, et que le décodage UTF-8 strict réussit. Sinon on rend
+   la chaîne telle quelle. */
+/* Table inverse de Windows-1252 pour les octets 0x80 a 0x9F.
+   Latin-1 et Windows-1252 ne different que la, mais c'est la plage des
+   seconds octets UTF-8 des majuscules accentuees : « État » part en
+   C3 89, et l'octet 0x89 se relit « ‰ », hors Latin-1. Sans cette
+   table, aucun nom a majuscule accentuee n'etait reparable. */
+var CP1252_HAUT = '€\u0081‚ƒ„…†‡'
+  + 'ˆ‰Š‹Œ\u008DŽ\u008F'
+  + '\u0090‘’“”•–—'
+  + '˜™š›œ\u009DžŸ';
+
+function octetDe(c) {
+  var n = c.charCodeAt(0);
+  if (n <= 255) return n;
+  var i = CP1252_HAUT.indexOf(c);
+  return i < 0 ? -1 : 0x80 + i;
+}
+
+function reparerAccents(s) {
+  if (typeof s !== 'string' || !/[ÃÂ]/.test(s)) return s;
+  var octets = [];
+  for (var i = 0; i < s.length; i++) {
+    var o = octetDe(s.charAt(i));
+    if (o < 0) return s;
+    octets.push(o);
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(octets));
+  } catch (e) { return s; }
+}
+
+function readRegistre(data) {
+  let d = data;
+  if (typeof d === 'string') d = extractJson(d);
+  if (!d || typeof d !== 'object' || !Array.isArray(d.factions)) {
+    return { ok: false, msg: 'Ce texte ne contient pas de registre HDS. Colle ce que donne « Copier le registre des factions » en jeu.' };
+  }
+  const list = d.factions.filter((f) => f && typeof f.id === 'string' && f.id);
+  if (!list.length) return { ok: false, msg: 'Le registre ne contient aucune faction exploitable.' };
+
+  REGISTRE = {
+    carte: reparerAccents(String(d.carte || '?')),
+    mission: reparerAccents(String(d.mission || '')),
+    date: String(d.date || ''),
+    mods: Array.isArray(d.mods) ? d.mods.map((m) => reparerAccents(String(m))) : [],
+    factions: list.map((f) => ({
+      id: f.id,
+      nom: reparerAccents(String(f.nom || f.id)),
+      camp: String(f.camp || ''),
+      g: Array.isArray(f.g) ? f.g.map(String) : [],
+      v: Array.isArray(f.v) ? f.v.map(String) : [],
+    })),
+  };
+  /* Rangées par camp puis par richesse : avec RHS le registre dépasse
+     200 entrées, une liste déroulante au hasard serait inutilisable. */
+  const ordre = ['EAST', 'INDEP', 'WEST', 'CIV'];
+  REGISTRE.factions.sort((a, b) => (ordre.indexOf(a.camp) - ordre.indexOf(b.camp))
+    || ((b.g.length + b.v.length) - (a.g.length + a.v.length))
+    || a.nom.localeCompare(b.nom));
+
+  FACTIONS = REGISTRE.factions.map((f) => [f.id, f.nom + ' · ' + (CAMP_LABEL[f.camp] || f.camp), '']);
+  buildFactionAliases();
+  return { ok: true, n: FACTIONS.length, carte: REGISTRE.carte };
+}
+function forgetRegistre() {
+  REGISTRE = null;
+  FACTIONS = FACTIONS_DEFAUT.slice();
+  buildFactionAliases();
+}
+/* Ancien index -> id du registre s'il y est, sinon l'index tel quel */
+function factionFromLegacy(i) {
+  if (!REGISTRE) return i;
+  const id = LEGACY_IDS[i];
+  if (id && REGISTRE.factions.some((f) => f.id === id)) return id;
+  return FACTIONS.length ? FACTIONS[0][0] : i;
+}
+
+/* ---------- petits utilitaires ---------- */
+function q(s) {
+  return '"' + String(s).replace(/[\r\n]+/g, ' ').trim().replace(/"/g, '""') + '"';
+}
+function parsePos(s) {
+  const a = String(s == null ? '' : s).trim().split(/[\s,;]+/).filter(Boolean).map(Number);
+  if (a.length < 2 || a.length > 3 || a.some((n) => !isFinite(n))) return null;
+  return [a[0], a[1], a.length === 3 ? a[2] : 0];
+}
+function fmtPos(p) { return '[' + p.join(',') + ']'; }
+function parseList(s) { return String(s == null ? '' : s).split(/[\s,;]+/).filter(Boolean); }
+function cut(s, n) { s = String(s == null ? '' : s).trim(); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+/* ---------- fabriques de champs ---------- */
+const adv = (f) => Object.assign(f, { adv: true });
+const pos = (k, l, def) => ({ k, l: l + ' (x, y, z)', t: 'pos', def });
+const int = (k, l, def, min, hint) => ({ k, l, t: 'int', def, min, hint });
+const bool = (k, l, def, hint) => ({ k, l, t: 'bool', def, hint });
+const fac = (k, l, def, hint) => ({ k, l, t: 'faction', def, hint });
+const txt = (k, l, def, hint) => ({ k, l, t: 'text', def, hint });
+const idn = (k, l, def, hint) => ({ k, l, t: 'ident', def, hint });
+const ids = (k, l, def, hint, extra) => Object.assign({ k, l, t: 'idents', def, hint }, extra || {});
+const locs = (k, l, def, hint) => ({ k, l, t: 'locs', def, hint });
+const camp = (k, l, def, hint) => ({ k, l, t: 'camp', def, hint });
+
+/* ---------- conversion et contrôle d'une valeur ---------- */
+function coerce(f, raw) {
+  const bad = (msg, out) => ({ out, issue: { level: 'error', msg } });
+  switch (f.t) {
+    case 'pos': {
+      const p = parsePos(raw);
+      return p ? { out: fmtPos(p) } : bad('Position invalide (ex. 4506, 5729)', '[0,0,0]');
+    }
+    case 'int': {
+      const n = parseInt(raw, 10);
+      if (!Number.isFinite(n)) return bad('Nombre attendu', String(f.def == null ? 0 : f.def));
+      if (f.min != null && n < f.min) return bad('Minimum ' + f.min, String(n));
+      return { out: String(n) };
+    }
+    case 'bool':
+      return { out: raw ? 'true' : 'false' };
+    case 'faction': {
+      const s = String(raw == null ? '' : raw).trim();
+      if (s === '') return bad('Choisis une faction', '0');
+      /* Un id part entre guillemets, un index tel quel :
+         hds_fnc_factionResoudre accepte les deux formes. */
+      if (/^[0-9]+$/.test(s)) {
+        const n = parseInt(s, 10);
+        return n >= 0 && n <= 7 ? { out: s } : bad('Index de faction hors 0-7', '0');
+      }
+      if (IDENT.test(s)) return { out: q(s) };
+      return bad('Faction inconnue', '0');
+    }
+    case 'text': {
+      const s = String(raw == null ? '' : raw).trim();
+      return s ? { out: q(s) } : bad('À remplir', '""');
+    }
+    case 'ident': {
+      const s = String(raw == null ? '' : raw).trim();
+      return IDENT.test(s)
+        ? { out: s }
+        : bad('Nom invalide (lettres, chiffres, _)', s || 'nom_a_renseigner');
+    }
+    case 'idents': {
+      const list = parseList(raw);
+      if (!list.length) {
+        return f.opt ? { out: '[]' } : bad('Indique au moins un nom', '[nom_a_renseigner]');
+      }
+      const wrong = list.filter((s) => !IDENT.test(s));
+      const out = '[' + list.map((s) => (f.quote ? q(s) : s)).join(',') + ']';
+      return wrong.length
+        ? { out, issue: { level: 'error', msg: 'Noms invalides : ' + wrong.join(', ') } }
+        : { out };
+    }
+    case 'locs': {
+      const list = Array.isArray(raw) ? raw.filter((s) => LOCS.some((l) => l[0] === s)) : [];
+      return list.length ? { out: '[' + list.map(q).join(',') + ']' } : bad('Choisis au moins un lieu', '["NameVillage"]');
+    }
+    case 'camp':
+      return { out: CAMPS.some((c) => c[0] === raw) ? raw : 'west' };
+    case 'marker':
+      return { out: q(String(raw == null ? '' : raw).trim()) };
+    default:
+      return { out: String(raw) };
+  }
+}
+
+function values(fields, v) {
+  const O = {};
+  const issues = [];
+  fields.forEach((f) => {
+    const r = coerce(f, v ? v[f.k] : undefined);
+    O[f.k] = r.out;
+    if (r.issue) issues.push({ k: f.k, level: r.issue.level, msg: r.issue.msg });
+  });
+  return { O, issues };
+}
+
+/* ---------- contexte de la mission ---------- */
+const CONTEXT_FIELDS = [
+  int('initiales', 'Tâches déjà faites au départ', 0, 0, 'En général 0.'),
+  int('remuneration', 'Récompense par tâche', 0, 0, 'Seulement si la boutique est active.'),
+  int('vehicules', 'Véhicules achetables au garage', 10, 0),
+  int('renforts', 'Appels de renfort', 3, 0, '1 appel = un groupe de 8 soldats alliés.'),
+  camp('camp', 'Camp des renforts', 'west'),
+  bool('trafic', 'Vie civile : trafic et habitants', true),
+  /* Tout ce qui regle la vie civile est ecrit ici, donc dans
+     init-scenario.sqf. Le menu CBA du jeu ne sert plus qu'a rattraper
+     une partie en cours : il ne decide pas de la mission. */
+  adv(int('civTrafic', 'Vehicules civils en circulation', 8, 0)),
+  adv(int('civHabitants', 'Habitants par agglomeration', -1, -1)),
+  adv(int('civRayon', 'Rayon de l’ambiance civile (m)', 300, 50)),
+  adv(int('civPortee', 'Portee du trafic (m)', 500, 120)),
+  adv(int('civOubli', 'Distance d’oubli des civils (m)', 1200, 200)),
+];
+
+/* ---------- les étapes ---------- */
+const VISIBLE = adv(bool('visible', 'Zone visible sur la carte', false));
+const TAILLE = (d) => adv(int('taille', 'Rayon de la zone (m)', d, 1));
+
+const STEPS = {
+  auto: {
+    label: 'Missions automatiques',
+    group: 'Missions et ennemis',
+    help: 'Des missions au hasard s’enchaînent : ennemis, civils et objectifs.',
+    fields: [
+      int('rayon', 'Taille de chaque mission (m)', 500, 50),
+      int('nb', 'Nombre de missions', 5, 1),
+      locs('lieux', 'Où ça se passe', ['NameVillage', 'NameLocal']),
+      bool('civils', 'Des civils sont présents', true),
+      bool('alea', 'Ennemi tiré au hasard', true),
+      fac('faction', 'Faction ennemie', 0),
+      adv(int('diff', 'Difficulté', 1, 1, 'Plus le chiffre est grand, plus c’est dur.')),
+      adv(int('taches', 'Objectifs par mission', 1, 1)),
+    ],
+    off: { faction: (v) => !!v.alea },
+    sum: (v) => `${v.nb} missions de ${v.rayon} m`,
+    gen: (O) => `[${O.rayon}, ${O.faction}, ${O.nb}, ${O.diff}, ${O.lieux}, ${O.civils}, ${O.alea}, ${O.taches}] spawn fnc_hds_missions;`,
+  },
+  occupation: {
+    label: 'Occuper une zone',
+    group: 'Missions et ennemis',
+    help: 'Place des ennemis (garnisons, patrouilles, véhicules) autour d’un point.',
+    fields: [
+      pos('centre', 'Centre de la zone', '4506.92, 5729.59, 0'),
+      fac('faction', 'Faction', 0),
+      int('taille', 'Rayon de la zone (m)', 500, 1),
+      adv(int('ratio', 'Densité', 1, 1)),
+    ],
+    sum: (v) => `${fname(v.faction)}, ${v.taille} m`,
+    gen: (O) => `[${O.centre}, ${O.ratio}, ${O.faction}, ${O.taille}, false] spawn fnc_hds_occupations;`,
+  },
+  surveillance: {
+    label: 'Surveiller une zone',
+    group: 'Missions et ennemis',
+    help: 'Quand un joueur entre dans la zone, des événements surprises se déclenchent (renfort, contre-attaque, hélicoptère…).',
+    fields: [
+      pos('centre', 'Centre de la zone', '4506.92, 5729.59, 0'),
+      int('rayon', 'Rayon de la zone (m)', 500, 1),
+      fac('faction', 'Faction', 0),
+      int('min', 'Événements au minimum', 3, 0),
+      int('max', 'Événements au maximum', 5, 1),
+    ],
+    check: (v, O) => (Number(O.min) > Number(O.max)
+      ? [{ k: 'min', level: 'error', msg: 'Le minimum dépasse le maximum' }]
+      : []),
+    sum: (v) => `${fname(v.faction)}, ${v.min} à ${v.max} événements`,
+    gen: (O) => `[${O.centre}, ${O.rayon}, ${O.faction}, ${O.min}, ${O.max}] spawn fnc_tactique_plannification;`,
+  },
+  presence: {
+    label: 'Présence sur la carte',
+    group: 'Missions et ennemis',
+    help: 'Ajoute des ennemis sur plusieurs lieux de la carte, sans créer de mission.',
+    fields: [
+      fac('faction', 'Faction', 0),
+      locs('lieux', 'Types de lieux', ['NameVillage', 'NameCity', 'NameLocal']),
+      int('rayon', 'Rayon de chaque zone (m)', 100, 1),
+      bool('toujours', 'Tous les lieux sont occupés', false, 'Décoché : environ un lieu sur quatre.'),
+      adv(int('diff', 'Difficulté', 1, 1)),
+    ],
+    sum: (v) => `${fname(v.faction)}, ${v.rayon} m par lieu`,
+    gen: (O) => `[${O.rayon}, ${O.faction}, ${O.toujours}, ${O.diff}, ${O.lieux}] spawn fnc_hds_presence_hostile;`,
+  },
+
+  otage: {
+    label: 'Libérer des otages',
+    group: 'Tâches',
+    task: true,
+    help: 'Pose les otages dans l’éditeur et donne-leur un nom, par exemple otage_0.',
+    fields: [
+      pos('centre', 'Où ils sont retenus', '4506.92, 5729.59, 0'),
+      pos('livraison', 'Où les ramener', '4847.85, 4598.72, 0'),
+      ids('otages', 'Otages (noms de l’éditeur)', 'otage_0, otage_1', 'Séparés par des virgules.'),
+      txt('nom', 'Nom affiché', "Pilotes de l'IDAP"),
+      txt('desc', 'Consigne affichée', "Trouver et libérer les pilotes de l'IDAP"),
+      TAILLE(50),
+      VISIBLE,
+    ],
+    sum: (v) => cut(v.nom, 40),
+    gen: (O) => `[${O.centre}, ${O.livraison}, ${O.otages}, ${O.nom}, ${O.desc}, ${O.taille}, ${O.visible}] spawn fnc_scenario_otage;`,
+  },
+  collecter: {
+    label: 'Récupérer des objets',
+    group: 'Tâches',
+    task: true,
+    fields: [
+      pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
+      ids('objets', 'Objets (noms de l’éditeur)', 'caisse_0, caisse_1', 'Séparés par des virgules.'),
+      txt('nom', 'Nom affiché', 'Caisses de munitions'),
+      txt('desc', 'Consigne affichée', 'Récupérer les caisses'),
+      TAILLE(50),
+      VISIBLE,
+    ],
+    sum: (v) => cut(v.nom, 40),
+    gen: (O) => `[${O.centre}, ${O.objets}, ${O.nom}, ${O.desc}, ${O.taille}, ${O.visible}] spawn fnc_scenario_collecter;`,
+  },
+  detruire: {
+    label: 'Détruire des cibles',
+    group: 'Tâches',
+    task: true,
+    fields: [
+      pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
+      ids('cibles', 'Cibles (noms de l’éditeur)', 'cible_0', 'Séparées par des virgules.'),
+      txt('nom', 'Nom affiché', 'Dépôt de munitions'),
+      txt('desc', 'Consigne affichée', 'Détruire le dépôt'),
+      TAILLE(50),
+      VISIBLE,
+    ],
+    sum: (v) => cut(v.nom, 40),
+    gen: (O) => `[${O.centre}, ${O.cibles}, ${O.nom}, ${O.desc}, ${O.taille}, ${O.visible}] spawn fnc_scenario_detruire;`,
+  },
+  apprehender: {
+    label: 'Capturer une cible',
+    group: 'Tâches',
+    task: true,
+    fields: [
+      pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
+      pos('livraison', 'Où la livrer', '4847.85, 4598.72, 0'),
+      idn('cible', 'Cible (nom de l’éditeur)', 'cible_hvt'),
+      txt('nom', 'Nom affiché', 'Chef rebelle'),
+      txt('desc', 'Consigne affichée', 'Capturer le chef rebelle et le livrer'),
+      TAILLE(50),
+      VISIBLE,
+    ],
+    sum: (v) => cut(v.nom, 40),
+    gen: (O) => `[${O.centre}, ${O.livraison}, ${O.cible}, ${O.nom}, ${O.desc}, ${O.taille}, ${O.visible}] spawn fnc_scenario_apprehender;`,
+  },
+  rejoindre: {
+    label: 'Rejoindre un point',
+    group: 'Tâches',
+    task: true,
+    fields: [
+      pos('centre', 'Point à rejoindre', '4506.92, 5729.59, 0'),
+      txt('nom', 'Nom du point', 'Point de rendez-vous'),
+      txt('desc', 'Consigne affichée', 'Rejoindre le point de rendez-vous'),
+      TAILLE(50),
+      VISIBLE,
+    ],
+    sum: (v) => cut(v.nom, 40),
+    gen: (O) => `[${O.centre}, ${O.nom}, ${O.desc}, ${O.taille}, ${O.visible}] spawn fnc_scenario_rejoindre;`,
+  },
+  securiser: {
+    label: 'Sécuriser une zone',
+    group: 'Tâches',
+    task: true,
+    fields: [
+      pos('centre', 'Zone à sécuriser', '4506.92, 5729.59, 0'),
+      txt('nom', 'Nom de la zone', 'Village'),
+      TAILLE(100),
+    ],
+    sum: (v) => cut(v.nom, 40),
+    gen: (O) => `[${O.centre}, ${O.nom}, ${O.taille}] spawn fnc_scenario_securiser;`,
+  },
+  voler: {
+    label: 'Voler un véhicule',
+    group: 'Tâches',
+    task: true,
+    fields: [
+      pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
+      idn('cible', 'Véhicule (nom de l’éditeur)', 'camion_ennemi'),
+      txt('nom', 'Nom affiché', 'Camion ennemi'),
+      txt('desc', 'Consigne affichée', 'Voler le camion'),
+    ],
+    sum: (v) => cut(v.nom, 40),
+    gen: (O) => `[${O.centre}, ${O.cible}, ${O.nom}, ${O.desc}] spawn fnc_scenario_voler;`,
+  },
+  telecharger: {
+    label: 'Pirater un objet',
+    group: 'Tâches',
+    task: true,
+    fields: [
+      pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
+      idn('objet', 'Objet (nom de l’éditeur)', 'ordinateur_0'),
+      txt('nom', 'Nom affiché', 'Ordinateur du QG'),
+      txt('desc', 'Consigne affichée', 'Récupérer les données'),
+      TAILLE(50),
+      VISIBLE,
+    ],
+    sum: (v) => cut(v.nom, 40),
+    gen: (O) => `[${O.centre}, ${O.objet}, ${O.nom}, ${O.desc}, ${O.taille}, ${O.visible}] spawn fnc_scenario_telecharger;`,
+  },
+  personnalisee: {
+    label: 'Tâche libre',
+    group: 'Tâches',
+    task: true,
+    help: 'Pose deux déclencheurs dans l’éditeur : un pour la réussite, un pour l’échec.',
+    fields: [
+      pos('centre', 'Où se passe la mission', '4506.92, 5729.59, 0'),
+      idn('ok', 'Déclencheur de réussite', 'declencheur_reussite'),
+      idn('ko', 'Déclencheur d’échec', 'declencheur_echec'),
+      txt('nom', 'Nom de la tâche', 'Ma tâche'),
+      txt('desc', 'Consigne affichée', 'Décris la consigne ici'),
+      TAILLE(50),
+      VISIBLE,
+    ],
+    sum: (v) => cut(v.nom, 40),
+    gen: (O) => `[${O.centre}, ${O.ok}, ${O.ko}, ${O.nom}, ${O.desc}, ${O.taille}, ${O.visible}] spawn fnc_scenario_personnalisee;`,
+  },
+
+  contreattaque: {
+    label: 'Contre-attaque',
+    group: 'Tactiques',
+    fields: [
+      pos('centre', 'Position visée', '4502.1, 5681.85, 0'),
+      fac('faction', 'Faction attaquante', 0),
+      int('inf', 'Groupes d’infanterie', 2, 0),
+      int('veh', 'Véhicules', 2, 0),
+      adv(int('dist', 'Distance de départ (m)', 700, 1)),
+    ],
+    sum: (v) => `${fname(v.faction)}, ${v.inf} groupe(s), ${v.veh} véhicule(s)`,
+    gen: (O) => `[${O.centre}, ${O.inf}, ${O.veh}, ${O.dist}, ${O.faction}, false] spawn fnc_tactique_contreattaque;`,
+  },
+  renfortterrestre: {
+    label: 'Renfort terrestre',
+    group: 'Tactiques',
+    help: 'Un véhicule de transport rempli de soldats arrive sur la position.',
+    fields: [
+      pos('centre', 'Position', '4506.92, 5729.59, 0'),
+      fac('faction', 'Faction', 0),
+      adv(int('dist', 'Distance d’approche (m)', 800, 1)),
+    ],
+    sum: (v) => fname(v.faction),
+    gen: (O) => `[${O.centre}, ${O.dist}, ${O.faction}] spawn fnc_tactique_renfortterrestre;`,
+  },
+  appuihelico: {
+    label: 'Hélicoptère d’attaque',
+    group: 'Tactiques',
+    help: 'Un hélicoptère patrouille autour d’un joueur choisi au hasard.',
+    fields: [
+      pos('centre', 'Position', '4506.92, 5729.59, 0'),
+      fac('faction', 'Faction', 0),
+      adv(int('dist', 'Distance (m)', 800, 1)),
+    ],
+    sum: (v) => fname(v.faction),
+    gen: (O) => `[${O.centre}, ${O.dist}, ${O.faction}] spawn fnc_tactique_appuihelico;`,
+  },
+  insertion: {
+    label: 'Insertion d’infanterie',
+    group: 'Tactiques',
+    help: 'Des soldats arrivent en véhicule, par les airs si possible.',
+    fields: [
+      pos('centre', 'Position', '4506.92, 5729.59, 0'),
+      fac('faction', 'Faction', 0),
+      adv(int('dist', 'Distance d’approche (m)', 800, 1)),
+    ],
+    sum: (v) => fname(v.faction),
+    gen: (O) => `[${O.centre}, ${O.dist}, ${O.faction}] spawn fnc_tactique_insertion;`,
+  },
+
+  pause: {
+    label: 'Pause',
+    group: 'Autre',
+    fields: [int('s', 'Durée (secondes)', 60, 1)],
+    sum: (v) => `${v.s} s`,
+    gen: (O) => `sleep ${O.s};`,
+  },
+  renfortallie: {
+    label: 'Renforts alliés en plus',
+    group: 'Autre',
+    help: 'Crédite des interventions de force alliée pour chaque mission.',
+    fields: [int('n', 'Nombre', 2, 0)],
+    sum: (v) => String(v.n),
+    gen: (O) => `[${O.n}] spawn fnc_scenario_renfort;`,
+  },
+};
+
+const STEP_GROUPS = ['Missions et ennemis', 'Tâches', 'Tactiques', 'Autre'];
+
+/* ---------- joueurs et objets (mes-parametres.sqf) ---------- */
+const PARAM_FIELDS = [
+  { k: 'base', l: 'Marqueur de ta base', t: 'marker', def: 'hds-ros-base', hint: 'Le nom du marqueur posé sur ta base dans l’éditeur.' },
+  ids('arsenaux', 'Arsenaux', 'arsenal_console', 'Objets de l’éditeur, séparés par des virgules.', { opt: true }),
+  ids('soins', 'Lieux de soins', 'soins', null, { opt: true }),
+  ids('postes', 'Postes de communication', 'arsenal_console', null, { opt: true }),
+  ids('chefs', 'Chefs d’équipe', 'chef_one, chef_two', 'Joueurs : les guillemets sont ajoutés pour toi.', { opt: true, quote: true }),
+  ids('radios', 'Opérateurs radio', 'communication_one, communication_two', null, { opt: true, quote: true }),
+  ids('medecins', 'Médecins', 'medecin_one, medecin_two', null, { opt: true, quote: true }),
+  ids('ingenieurs', 'Mécaniciens', 'mecano_one, mecano_two', null, { opt: true, quote: true }),
+  ids('pilotes', 'Pilotes', 'pilote_one, pilote_two', null, { opt: true, quote: true }),
+  ids('contractors', 'Mercenaires', 'contractor_1, contractor_2', null, { opt: true, quote: true }),
+];
+const PARAM_VARS = {
+  arsenaux: 'sontdesarsenales',
+  soins: 'sontdeslieudesoin',
+  postes: 'sontdespostesdecommunications',
+  chefs: 'sontdesmanageurs',
+  radios: 'sontdesexpertcoms',
+  medecins: 'sontdesmedecins',
+  ingenieurs: 'sontdesingenieurs',
+  pilotes: 'sontdespilotes',
+  contractors: 'sontdescontractor',
+};
+
+/* ---------- génération ---------- */
+function generate(state) {
+  const issues = [];
+  const lines = [];
+  const meta = {};
+  const C = values(CONTEXT_FIELDS, state.ctx);
+  C.issues.forEach((i) => issues.push({ scope: 'ctx', k: i.k, level: i.level, msg: i.msg }));
+
+  lines.push('// Mission générée avec le générateur hds-ops.');
+  lines.push('// Remplace tout le contenu de hdssystem\\init-scenario.sqf par ceci.');
+  lines.push('// Ce fichier ne contient que la mission : le système est chargé');
+  lines.push("// à part, par hdssystem\\init-systeme.sqf, qu'il ne faut pas toucher.");
+  lines.push('');
+  lines.push('// ----- Contexte -----');
+  if (state.ctx.trafic) {
+    lines.push(
+      '[' + C.O.civTrafic + ', ' + C.O.civHabitants + ', true, ' + C.O.civRayon
+      + ', ' + C.O.civPortee + ', ' + C.O.civOubli + '] spawn fnc_hds_vie_civile;'
+    );
+  }
+  lines.push(`[${C.O.renforts}, ${C.O.camp}] call fnc_renfort_init;`);
+  lines.push(`[${C.O.initiales}, ${C.O.remuneration}, ${C.O.vehicules}] call fnc_scenario_init;`);
+  lines.push('');
+  lines.push('// ----- Déroulé -----');
+
+  let taskDone = Number(C.O.initiales) || 0;
+  const count = state.steps.length;
+  if (!count) issues.push({ scope: 'global', level: 'warn', msg: 'Ajoute au moins une étape.' });
+
+  state.steps.forEach((s, i) => {
+    const def = STEPS[s.type];
+    if (!def) return;
+    const R = values(def.fields, s.v);
+    const push = (it) => issues.push({ scope: 'step', id: s.id, n: i + 1, k: it.k, level: it.level, msg: it.msg });
+    R.issues.forEach(push);
+    if (def.check) def.check(s.v, R.O).forEach(push);
+    lines.push('');
+    lines.push(`// Étape ${i + 1} - ${def.label}`);
+    lines.push(def.gen(R.O));
+
+    if (def.task) {
+      taskDone += 1;
+      const last = i === count - 1;
+      meta[s.id] = { autoN: taskDone, last };
+      if (s.wait && !last) {
+        let N = taskDone;
+        const raw = s.waitN == null ? '' : String(s.waitN).trim();
+        if (raw !== '') {
+          const v = parseInt(raw, 10);
+          if (!Number.isFinite(v) || v < 1) push({ k: 'waitN', level: 'error', msg: 'Nombre ≥ 1' });
+          else if (v > taskDone) push({ k: 'waitN', level: 'error', msg: 'Maximum : ' + taskDone });
+          else N = v;
+        }
+        lines.push(`waituntil {tache_scenario >= ${N}};   // on attend la fin de la tâche avant de continuer`);
+        meta[s.id].waitN = N;
+      }
+    }
+  });
+  lines.push('');
+  return { code: lines.join('\n'), issues, meta };
+}
+
+function generateParams(p) {
+  const issues = [];
+  const lines = [];
+  const R = values(PARAM_FIELDS, p);
+  R.issues.forEach((it) => issues.push({ scope: 'param', k: it.k, level: it.level, msg: it.msg }));
+  lines.push('// Extrait de mes-parametres.sqf.');
+  lines.push('// Remplace les lignes qui portent les mêmes noms dans ton fichier.');
+  lines.push('');
+  if (String(p.base || '').trim()) lines.push(`hdsnombase = [${R.O.base}];`);
+  lines.push('');
+  lines.push('// Objets (sans guillemets)');
+  ['arsenaux', 'soins', 'postes'].forEach((k) => lines.push(`${PARAM_VARS[k]} = ${R.O[k]};`));
+  lines.push('');
+  lines.push('// Joueurs (entre guillemets)');
+  ['chefs', 'radios', 'medecins', 'ingenieurs', 'pilotes', 'contractors'].forEach((k) => lines.push(`${PARAM_VARS[k]} = ${R.O[k]};`));
+  lines.push('');
+  return { code: lines.join('\n'), issues };
+}
+
+/* ---------- valeurs par défaut et exemples ---------- */
+function defaults(fields) {
+  const v = {};
+  fields.forEach((f) => { v[f.k] = Array.isArray(f.def) ? f.def.slice() : f.def; });
+  return v;
+}
+function defaultState() {
+  return { ctx: defaults(CONTEXT_FIELDS), steps: [], params: defaults(PARAM_FIELDS), nextId: 1 };
+}
+function newStep(state, type) {
+  const id = state.nextId++;
+  return { id, type, v: defaults(STEPS[type].fields), wait: !!STEPS[type].task, waitN: null, open: true };
+}
+function preset(name) {
+  const s = defaultState();
+  const add = (type, over, extra) => {
+    const st = newStep(s, type);
+    Object.assign(st.v, over || {});
+    st.open = s.steps.length === 0;
+    Object.assign(st, extra || {});
+    s.steps.push(st);
+  };
+  if (name === 'public') {
+    add('auto');
+  } else {
+    add('surveillance', { faction: 6 });
+    add('occupation', { faction: 6 });
+    add('otage');
+    add('contreattaque', { inf: 2, veh: 5, faction: 6, dist: 700 });
+  }
+  return s;
+}
+
+/* ---------- description « en clair » de la mission ---------- */
+const SIDE_NAMES = { west: 'BLUFOR', east: 'OPFOR', independent: 'indépendants' };
+const LOC_PLURAL = { NameVillage: 'villages', NameCity: 'villes', NameLocal: 'lieux particuliers', Name: 'lieux communs', Strategic: 'bases militaires' };
+
+function plural(n, s, p) { return Number(n) > 1 ? p : s; }
+function joinList(a) { return a.length <= 1 ? (a[0] || '') : a.slice(0, -1).join(', ') + ' et ' + a[a.length - 1]; }
+function num(raw, fallback) { const n = parseInt(raw, 10); return Number.isFinite(n) ? n : (fallback == null ? '?' : fallback); }
+function locPlain(arr) {
+  const a = (Array.isArray(arr) ? arr : []).map((k) => LOC_PLURAL[k]).filter(Boolean);
+  return a.length ? joinList(a) : 'lieux à choisir';
+}
+function at(raw) {
+  const p = parsePos(raw);
+  return p ? 'aux coordonnées ' + Math.round(p[0]) + ', ' + Math.round(p[1]) : 'à une position à renseigner';
+}
+function around(raw) {
+  const p = parsePos(raw);
+  return p ? 'autour des coordonnées ' + Math.round(p[0]) + ', ' + Math.round(p[1]) : 'autour d’une position à renseigner';
+}
+function nameList(raw) { const a = parseList(raw); return a.length ? joinList(a) : 'noms à renseigner'; }
+function quoted(raw) { const s = String(raw == null ? '' : raw).trim(); return s ? '« ' + s + ' »' : '« (sans nom) »'; }
+function brief(raw, fallback) { const s = String(raw == null ? '' : raw).trim(); return s || fallback; }
+const shown = (v) => (v.visible ? ' La zone est visible sur la carte.' : '');
+const consigne = (v) => ' Consigne affichée : ' + quoted(v.desc) + '.';
+
+const DESCR = {
+  auto: (v) => `Enchaîne ${num(v.nb)} ${plural(v.nb, 'mission automatique', 'missions automatiques')} de ${num(v.rayon)} m de rayon, dans les ${locPlain(v.lieux)}. ${v.civils ? 'Des civils sont présents.' : 'Il n’y a pas de civils.'} ${v.alea ? 'L’ennemi est tiré au hasard à chaque mission.' : 'L’ennemi est la faction ' + fname(v.faction) + '.'} Chaque mission compte ${num(v.taches)} ${plural(v.taches, 'objectif', 'objectifs')} (difficulté ${num(v.diff)}).`,
+  occupation: (v) => `Des ennemis de la faction ${fname(v.faction)} (garnisons, patrouilles, véhicules) occupent une zone de ${num(v.taille)} m ${at(v.centre)}.`,
+  surveillance: (v) => `La zone de ${num(v.rayon)} m ${at(v.centre)} est surveillée par la faction ${fname(v.faction)}. Quand un joueur y entre, ${num(v.min) === num(v.max) ? num(v.min) : 'de ' + num(v.min) + ' à ' + num(v.max)} ${plural(v.max, 'événement surprise', 'événements surprises')} se déclenchent (renfort, contre-attaque, hélicoptère, insertion).`,
+  presence: (v) => `Des ennemis de la faction ${fname(v.faction)} sont présents sur ${v.toujours ? 'tous les' : 'environ un quart des'} lieux suivants de la carte : ${locPlain(v.lieux)}. Zones de ${num(v.rayon)} m.`,
+
+  otage: (v) => `Libérer ${quoted(v.nom)} (${nameList(v.otages)}), retenus ${around(v.centre)}, et les ramener ${at(v.livraison)}.${consigne(v)}${shown(v)}`,
+  collecter: (v) => `Récupérer ${quoted(v.nom)} (${nameList(v.objets)}) ${around(v.centre)}.${consigne(v)}${shown(v)}`,
+  detruire: (v) => `Détruire ${quoted(v.nom)} (${nameList(v.cibles)}) ${around(v.centre)}.${consigne(v)}${shown(v)}`,
+  apprehender: (v) => `Capturer ${quoted(v.nom)} (${brief(v.cible, 'nom à renseigner')}) ${around(v.centre)}, puis le livrer ${at(v.livraison)}.${consigne(v)}${shown(v)}`,
+  rejoindre: (v) => `Rejoindre ${quoted(v.nom)} ${at(v.centre)}.${consigne(v)}${shown(v)}`,
+  securiser: (v) => `Sécuriser la zone ${quoted(v.nom)} de ${num(v.taille)} m ${at(v.centre)}.`,
+  voler: (v) => `Voler le véhicule ${brief(v.cible, 'nom à renseigner')} (${quoted(v.nom)}) ${around(v.centre)}.${consigne(v)}`,
+  telecharger: (v) => `Pirater ${brief(v.objet, 'objet à renseigner')} (${quoted(v.nom)}) ${around(v.centre)} pour en récupérer les données.${consigne(v)}${shown(v)}`,
+  personnalisee: (v) => `Tâche libre ${quoted(v.nom)} ${at(v.centre)} : réussie quand le déclencheur ${brief(v.ok, '?')} s’active, échouée quand le déclencheur ${brief(v.ko, '?')} s’active.${consigne(v)}${shown(v)}`,
+
+  contreattaque: (v) => `La faction ${fname(v.faction)} contre-attaque ${at(v.centre)} avec ${num(v.inf)} ${plural(v.inf, 'groupe', 'groupes')} d’infanterie et ${num(v.veh)} ${plural(v.veh, 'véhicule', 'véhicules')}, qui partent à ${num(v.dist)} m.`,
+  renfortterrestre: (v) => `Un véhicule de transport rempli de soldats de la faction ${fname(v.faction)} arrive ${at(v.centre)}, en partant à ${num(v.dist)} m.`,
+  appuihelico: (v) => `Un hélicoptère d’attaque de la faction ${fname(v.faction)} patrouille autour d’un joueur choisi au hasard, dans le secteur ${at(v.centre)}.`,
+  insertion: (v) => `Des soldats de la faction ${fname(v.faction)} arrivent en véhicule (par les airs si possible) ${at(v.centre)}, en partant à ${num(v.dist)} m.`,
+
+  pause: (v) => `Pause de ${num(v.s)} secondes${num(v.s, 0) >= 60 ? ' (environ ' + Math.round(num(v.s, 0) / 60) + ' min)' : ''}.`,
+  renfortallie: (v) => `${num(v.n)} ${plural(v.n, 'intervention', 'interventions')} de force alliée en plus pour chaque mission.`,
+};
+
+function describe(state) {
+  const meta = generate(state).meta;
+  const c = state.ctx;
+  const ren = num(c.renforts, 0);
+  const veh = num(c.vehicules, 0);
+  const done = num(c.initiales, 0);
+  const pay = num(c.remuneration, 0);
+  let ctx = 'Au départ : ' + ren + ' ' + plural(ren, 'appel de renfort allié', 'appels de renfort alliés') + ' (' + (SIDE_NAMES[c.camp] || 'BLUFOR') + '), '
+    + (c.trafic ? 'de la vie civile : du trafic sur les routes et des habitants dans les agglomérations' : 'aucune vie civile') + ', '
+    + veh + ' ' + plural(veh, 'point de véhicule', 'points de véhicule') + ' pour le garage virtuel';
+  if (done > 0) ctx += ', ' + done + ' ' + plural(done, 'tâche déjà comptée comme terminée', 'tâches déjà comptées comme terminées');
+  if (pay > 0) ctx += ', ' + pay + ' de récompense par tâche';
+  ctx += '.';
+
+  const items = [];
+  state.steps.forEach((s, i) => {
+    const def = STEPS[s.type];
+    if (!def) return;
+    let text = '';
+    try { text = DESCR[s.type](s.v); } catch (e) { text = ''; }
+    const m = meta[s.id];
+    let wait = null;
+    if (m && s.wait && !m.last) {
+      const n = m.waitN || m.autoN;
+      wait = 'On attend ici que ' + (n === 1 ? 'la tâche soit terminée' : n + ' tâches soient terminées') + ' avant de continuer.';
+    }
+    items.push({ n: i + 1, title: def.label, text, wait });
+  });
+
+  const nTasks = state.steps.filter((s) => STEPS[s.type] && STEPS[s.type].task).length;
+  const brief2 = items.length
+    ? items.length + ' ' + plural(items.length, 'étape', 'étapes') + (nTasks ? ', dont ' + nTasks + ' ' + plural(nTasks, 'tâche à accomplir', 'tâches à accomplir') : '') + '.'
+    : '';
+  return { ctx, brief: brief2, items, empty: !items.length, editor: editorNames(state) };
+}
+
+/* Noms à créer dans l'éditeur (otages, cibles, déclencheurs…) */
+function editorNames(state) {
+  const out = [];
+  state.steps.forEach((s) => {
+    const def = STEPS[s.type];
+    if (!def) return;
+    def.fields.forEach((f) => {
+      if (f.t !== 'ident' && f.t !== 'idents') return;
+      parseList(s.v[f.k]).forEach((n) => { if (IDENT.test(n) && !out.includes(n)) out.push(n); });
+    });
+  });
+  return out;
+}
+
+/* ---------- lecture d'une mission décrite par une IA (JSON) ---------- */
+function norm(s) {
+  return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+}
+function cleanId(s) {
+  let t = String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').trim().replace(/[\s\-]+/g, '_').replace(/[^A-Za-z0-9_]/g, '');
+  if (/^[0-9]/.test(t)) t = '_' + t;
+  return t;
+}
+
+const TYPE_ALIASES = (() => {
+  const m = {};
+  Object.keys(STEPS).forEach((k) => { m[norm(k)] = k; m[norm(STEPS[k].label)] = k; });
+  const extra = {
+    missionsauto: 'auto', missionauto: 'auto', missionsautomatique: 'auto', missionautomatique: 'auto', automatique: 'auto',
+    occuper: 'occupation', garnison: 'occupation',
+    surveiller: 'surveillance', planification: 'surveillance', plannification: 'surveillance',
+    presencehostile: 'presence', presenceennemie: 'presence',
+    otages: 'otage', liberer: 'otage', liberation: 'otage', hostage: 'otage', sauvetage: 'otage',
+    collecte: 'collecter', recuperer: 'collecter', recuperation: 'collecter',
+    destruction: 'detruire',
+    capturer: 'apprehender', capture: 'apprehender', arrestation: 'apprehender', arreter: 'apprehender',
+    securisation: 'securiser',
+    vol: 'voler',
+    pirater: 'telecharger', piratage: 'telecharger', telechargement: 'telecharger',
+    tachelibre: 'personnalisee', personnalise: 'personnalisee', custom: 'personnalisee',
+    renfort: 'renfortterrestre', renforts: 'renfortterrestre', renfortennemi: 'renfortterrestre',
+    helicoptere: 'appuihelico', helico: 'appuihelico',
+    renfortsallies: 'renfortallie',
+  };
+  Object.assign(m, extra);
+  return m;
+})();
+const IGNORED_TYPES = ['attendre', 'attente', 'wait', 'waituntil'];
+
+const FIELD_ALIASES = { position: 'centre', pos: 'centre', coordonnees: 'centre', rayon: 'taille', taille: 'rayon', factionennemie: 'faction', nombre: 'nb' };
+
+let FACTION_ALIASES = {};
+function buildFactionAliases() {
+  const m = {};
+  FACTIONS.forEach(([n, name]) => { m[norm(String(name).replace(/\(.*\)/, ''))] = n; });
+  /* Les mots courants visent un ancien index, traduit en id quand un
+     registre est chargé. Ils ne masquent jamais un nom du registre. */
+  const mots = { americain: 2, us: 2, usa: 2, blufor: 2, russe: 5, russes: 5, russie: 5, afghan: 6, boko: 4, bokoharam: 4, etatislamique: 7, ei: 7, csat: 0, aaf: 1, fia: 3 };
+  Object.entries(mots).forEach(([k, i]) => { if (m[k] === undefined) m[k] = factionFromLegacy(i); });
+  FACTION_ALIASES = m;
+}
+buildFactionAliases();
+const LOC_ALIASES = (() => {
+  const m = {};
+  LOCS.forEach(([k]) => { m[norm(k)] = k; });
+  Object.assign(m, {
+    village: 'NameVillage', villages: 'NameVillage', ville: 'NameCity', villes: 'NameCity',
+    lieuparticulier: 'NameLocal', lieuxparticuliers: 'NameLocal', local: 'NameLocal',
+    lieucommun: 'Name', lieuxcommuns: 'Name', basemilitaire: 'Strategic', basesmilitaires: 'Strategic', base: 'Strategic', bases: 'Strategic',
+  });
+  return m;
+})();
+const CAMP_ALIASES = { west: 'west', blufor: 'west', otan: 'west', east: 'east', opfor: 'east', independent: 'independent', independant: 'independent', independants: 'independent', indep: 'independent', aaf: 'independent' };
+
+function toRaw(f, v, warn) {
+  if (v === null) return ['pos', 'ident', 'idents', 'text'].includes(f.t) ? '' : undefined;
+  if (v === undefined) return undefined;
+  switch (f.t) {
+    case 'pos':
+      if (Array.isArray(v)) return v.join(', ');
+      if (typeof v === 'object') return [v.x, v.y, v.z].filter((n) => n !== undefined).join(', ');
+      return String(v);
+    case 'int': {
+      const n = Number(v);
+      if (!Number.isFinite(n)) { warn('« ' + f.l + ' » : nombre attendu, valeur ignorée.'); return undefined; }
+      return String(Math.round(n));
+    }
+    case 'bool': {
+      if (typeof v === 'boolean') return v;
+      const s = norm(v);
+      if (['true', 'oui', 'vrai', 'yes', '1'].includes(s)) return true;
+      if (['false', 'non', 'faux', 'no', '0'].includes(s)) return false;
+      warn('« ' + f.l + ' » : oui ou non attendu, valeur ignorée.');
+      return undefined;
+    }
+    case 'faction': {
+      const s = String(v).trim();
+      if (FACTIONS.some((x) => String(x[0]) === s)) return s;
+      const n = Number(v);
+      if (Number.isInteger(n) && n >= 0 && n <= 7) return String(factionFromLegacy(n));
+      const hit = FACTION_ALIASES[norm(v)];
+      if (hit !== undefined) return String(hit);
+      warn('« ' + f.l + ' » : faction inconnue (' + v + '), valeur par défaut gardée.');
+      return undefined;
+    }
+    case 'text':
+      return Array.isArray(v) ? v.join(' ') : String(v);
+    case 'ident': {
+      const c = cleanId(Array.isArray(v) ? v[0] : v);
+      if (c !== String(Array.isArray(v) ? v[0] : v)) warn('Nom d’objet « ' + v + ' » nettoyé en « ' + c + ' ».');
+      return c;
+    }
+    case 'idents': {
+      const list = (Array.isArray(v) ? v : parseList(v)).map(String);
+      const cleaned = list.map(cleanId).filter(Boolean);
+      if (cleaned.join(',') !== list.join(',')) warn('Noms d’objets nettoyés : ' + cleaned.join(', ') + '.');
+      return cleaned.join(', ');
+    }
+    case 'locs': {
+      const list = (Array.isArray(v) ? v : parseList(v)).filter((x) => !['et', 'ou'].includes(String(x).toLowerCase()));
+      const out = [];
+      list.forEach((x) => {
+        const k = LOC_ALIASES[norm(x)];
+        if (!k) warn('Type de lieu inconnu : ' + x + '.');
+        else if (!out.includes(k)) out.push(k);
+      });
+      return out.length ? out : undefined;
+    }
+    case 'camp':
+      return CAMP_ALIASES[norm(v)] || undefined;
+    default:
+      return undefined;
+  }
+}
+
+function extractJson(text) {
+  const t = String(text);
+  const attempt = (s) => {
+    try { return JSON.parse(s); } catch (e) { /* on essaie plus tolérant */ }
+    try {
+      return JSON.parse(s.replace(/[“”]/g, '"').replace(/[‘’]/g, '\'').replace(/,\s*([}\]])/g, '$1'));
+    } catch (e) { return undefined; }
+  };
+  let v = attempt(t.trim());
+  if (v !== undefined) return v;
+  const fence = t.match(/```(?:json|JSON)?\s*([\s\S]*?)```/);
+  if (fence) { v = attempt(fence[1].trim()); if (v !== undefined) return v; }
+  const a = t.indexOf('{');
+  const b = t.lastIndexOf('}');
+  if (a >= 0 && b > a) { v = attempt(t.slice(a, b + 1)); if (v !== undefined) return v; }
+  const c = t.indexOf('[');
+  const d = t.lastIndexOf(']');
+  if (c >= 0 && d > c) { v = attempt(t.slice(c, d + 1)); if (v !== undefined) return v; }
+  return undefined;
+}
+
+function readImport(input) {
+  const res = { ok: false, steps: [], ctx: {}, notes: [], warnings: [], errors: [] };
+  const warn = (m) => res.warnings.push(m);
+  let data = input;
+  if (typeof input === 'string') {
+    data = extractJson(input);
+    if (data === undefined) {
+      res.errors.push('Je ne trouve pas de JSON dans la réponse. Colle la réponse complète de l’IA, accolades { } comprises.');
+      return res;
+    }
+  }
+  if (Array.isArray(data)) data = { steps: data };
+  if (!data || typeof data !== 'object' || !Array.isArray(data.steps)) {
+    res.errors.push('Le JSON doit contenir une liste « steps ».');
+    return res;
+  }
+  const tmp = defaultState();
+  data.steps.forEach((raw, i) => {
+    const n = i + 1;
+    if (!raw || typeof raw !== 'object') { res.errors.push('Étape ' + n + ' : format incompris, ignorée.'); return; }
+    const tkey = norm(raw.type);
+    if (IGNORED_TYPES.includes(tkey)) { warn('Étape ' + n + ' (« ' + raw.type + ' ») ignorée : l’attente se règle sur chaque tâche.'); return; }
+    const type = TYPE_ALIASES[tkey];
+    if (!type) { res.errors.push('Étape ' + n + ' : type « ' + raw.type + ' » inconnu, étape ignorée.'); return; }
+    const def = STEPS[type];
+    const st = newStep(tmp, type);
+    const src = (raw.values && typeof raw.values === 'object') ? raw.values
+      : (raw.params && typeof raw.params === 'object') ? raw.params
+        : Object.fromEntries(Object.entries(raw).filter(([k]) => !['type', 'wait', 'waitN', 'values', 'params'].includes(k)));
+    const byNorm = {};
+    def.fields.forEach((f) => { byNorm[norm(f.k)] = f; });
+    Object.entries(src).forEach(([key, val]) => {
+      let f = byNorm[norm(key)];
+      if (!f && FIELD_ALIASES[norm(key)]) f = byNorm[norm(FIELD_ALIASES[norm(key)])];
+      if (!f) { warn('Étape ' + n + ' : champ « ' + key + ' » inconnu, ignoré.'); return; }
+      const r = toRaw(f, val, (m) => warn('Étape ' + n + ' : ' + m));
+      if (r !== undefined) st.v[f.k] = r;
+    });
+    if (def.task) {
+      if (typeof raw.wait === 'boolean') st.wait = raw.wait;
+      else if (raw.wait != null) { const w = toRaw({ t: 'bool', l: 'wait' }, raw.wait, () => {}); st.wait = w === undefined ? true : w; }
+      else st.wait = true;
+    }
+    st.open = false;
+    res.steps.push(st);
+  });
+  if (data.context && typeof data.context === 'object') {
+    const alias = { renfort: 'renforts', vehicule: 'vehicules', recompense: 'remuneration' };
+    Object.entries(data.context).forEach(([key, val]) => {
+      const k = alias[norm(key)] || norm(key);
+      const f = CONTEXT_FIELDS.find((x) => norm(x.k) === k);
+      if (!f) { warn('Contexte : champ « ' + key + ' » inconnu, ignoré.'); return; }
+      const r = toRaw(f, val, (m) => warn('Contexte : ' + m));
+      if (r !== undefined) res.ctx[f.k] = r;
+    });
+  }
+  const nt = data.notes;
+  res.notes = Array.isArray(nt) ? nt.map(String).filter(Boolean) : (nt ? [String(nt)] : []);
+  res.ok = res.steps.length > 0;
+  if (!res.ok && !res.errors.length) res.errors.push('Aucune étape reconnue dans la réponse.');
+  return res;
+}
+
+/* ---------- le prompt à donner à une IA ---------- */
+function typeDoc(f) {
+  switch (f.t) {
+    case 'pos': return 'position, texte "x, y, z" (ex : "4506, 5729, 0")';
+    case 'int': return 'entier' + (f.min != null ? ' (minimum ' + f.min + ')' : '');
+    case 'bool': return 'true ou false';
+    case 'faction': return REGISTRE ? 'id de faction, à reprendre exactement dans la liste ci-dessous' : 'numéro de faction, de 0 à 7 (voir la liste)';
+    case 'text': return 'texte court en français';
+    case 'ident': return 'nom d’objet de l’éditeur (lettres, chiffres et _, sans espace ni accent)';
+    case 'idents': return 'noms d’objets de l’éditeur séparés par des virgules, ex : "otage_0, otage_1"';
+    case 'locs': return 'liste de textes parmi ' + LOCS.map((l) => '"' + l[0] + '"').join(', ');
+    case 'camp': return '"west", "east" ou "independent"';
+    default: return '';
+  }
+}
+function defDoc(f) {
+  if (!['int', 'bool', 'faction', 'camp', 'locs'].includes(f.t) || f.def === undefined) return '';
+  return ' (défaut : ' + (Array.isArray(f.def) ? JSON.stringify(f.def) : typeof f.def === 'string' ? '"' + f.def + '"' : String(f.def)) + ')';
+}
+
+const PROMPT_EXAMPLES = [
+  {
+    description: 'Les joueurs doivent libérer deux pilotes otages retenus vers 4506, 5729 et les ramener à la base en 4847, 4598. Ensuite la milice afghane contre-attaque la base (4502, 5681) avec 2 groupes et 5 véhicules. 3 appels de renfort, pas de trafic civil.',
+    answer: {
+      context: { renforts: 3, trafic: false },
+      steps: [
+        { type: 'otage', values: { centre: '4506, 5729, 0', livraison: '4847, 4598, 0', otages: 'otage_0, otage_1', nom: 'Pilotes retenus', desc: 'Libérer les pilotes et les ramener à la base' }, wait: true },
+        { type: 'contreattaque', values: { centre: '4502, 5681, 0', faction: 6, inf: 2, veh: 5 } },
+      ],
+      notes: ['« La milice afghane » = faction 6 (demande le mod Project OPFOR).'],
+    },
+  },
+  {
+    description: 'Une soirée publique : 8 missions automatiques de 600 m dans des villes et des villages, avec des civils, ennemi au hasard, 2 objectifs par mission.',
+    answer: {
+      context: {},
+      steps: [{ type: 'auto', values: { rayon: 600, nb: 8, lieux: ['NameVillage', 'NameCity'], civils: true, alea: true, taches: 2 } }],
+      notes: [],
+    },
+  },
+  {
+    description: 'Détruire un dépôt de munitions et en même temps récupérer deux caisses, puis sécuriser le village.',
+    answer: {
+      context: {},
+      steps: [
+        { type: 'detruire', values: { centre: null, cibles: 'depot_0', nom: 'Dépôt de munitions', desc: 'Détruire le dépôt' }, wait: false },
+        { type: 'collecter', values: { centre: null, objets: 'caisse_0, caisse_1', nom: 'Caisses', desc: 'Récupérer les caisses' }, wait: true },
+        { type: 'securiser', values: { centre: null, nom: 'Village' } },
+      ],
+      notes: ['Aucune coordonnée donnée : les positions sont à renseigner.', 'Les deux premières tâches sont simultanées ; la suite attend qu’elles soient finies toutes les deux.'],
+    },
+  },
+];
+
+function buildPrompt(description) {
+  const L = [];
+  L.push('Tu aides à préparer une mission pour hds-ops, un framework de missions Arma 3. Transforme la DESCRIPTION de mission ci-dessous en une suite d’étapes, au format JSON décrit plus bas.');
+  L.push('', '# Règles');
+  [
+    'Réponds UNIQUEMENT par un objet JSON (un seul bloc), sans texte avant ni après.',
+    'Utilise seulement les types d’étapes et les champs listés plus bas. N’invente ni type ni champ.',
+    'Chaque étape est {"type": "...", "values": {...}, "wait": true ou false}. « wait » ne s’écrit que pour les types marqués [TÂCHE].',
+    'Omets un champ pour garder sa valeur par défaut. N’écris que ce que la description précise ou ce qu’il faut en déduire.',
+    'Positions : écris "x, y, z" uniquement si la description donne des coordonnées. Sinon mets null : l’utilisateur les renseignera. N’invente jamais de coordonnées.',
+    'Noms d’objets de l’éditeur (otages, cibles, objets, véhicule, déclencheurs) : propose des noms simples en minuscules, sans espace ni accent (otage_0, otage_1, depot_0…), un par élément décrit.',
+    'Textes affichés aux joueurs (nom, desc) : en français, courts, sans guillemets doubles.',
+    'Respecte l’ordre chronologique de la description. Quand la suite doit attendre la fin d’une tâche (« puis », « ensuite », « une fois que », « après »), mets "wait": true sur cette tâche. Pour des tâches simultanées (« en même temps », « pendant que »), mets "wait": false sur chacune sauf la dernière du groupe.',
+    'Si la description est floue, choisis une valeur raisonnable et dis-le dans "notes". Signale aussi dans "notes" tout ce qui ne correspond à aucun type d’étape.',
+    'Garde des valeurs réalistes : rayons de 50 à 2000 m, quelques groupes et véhicules, jamais des dizaines.',
+  ].forEach((r, i) => L.push((i + 1) + '. ' + r));
+
+  L.push('', '# Types d’étapes (champ "type")');
+  Object.entries(STEPS).forEach(([key, d]) => {
+    L.push('', '"' + key + '"' + (d.task ? ' [TÂCHE]' : '') + ' : ' + d.label + '.' + (d.help ? ' ' + d.help : ''));
+    d.fields.forEach((f) => L.push('  - ' + f.k + ' : ' + f.l.replace(/ \(x, y, z\)$/, '') + ', ' + typeDoc(f) + defDoc(f)));
+  });
+
+  L.push('', REGISTRE
+    ? '# Factions réellement présentes sur ce serveur (écris l’id EXACT dans les champs « faction »)'
+    : '# Factions (numéro à écrire dans les champs « faction »)');
+  if (REGISTRE) {
+    L.push('Carte : ' + REGISTRE.carte + (REGISTRE.mods.length ? ' — mods chargés : ' + REGISTRE.mods.join(', ') : ''));
+  }
+  FACTIONS.forEach(([n, name, addon]) => L.push(n + ' = ' + name + (addon ? ' (demande ' + addon + ')' : '')));
+
+  L.push('', '# Contexte de départ (objet "context", facultatif)');
+  CONTEXT_FIELDS.forEach((f) => L.push('  - ' + f.k + ' : ' + f.l + ', ' + typeDoc(f) + defDoc(f)));
+
+  L.push('', '# Format de la réponse');
+  L.push('{"context": {...}, "steps": [ {...}, {...} ], "notes": ["..."]}');
+
+  L.push('', '# Exemples');
+  PROMPT_EXAMPLES.forEach((ex, i) => {
+    L.push('', 'Exemple ' + (i + 1) + ' — description : ' + ex.description);
+    L.push('Réponse :');
+    L.push(JSON.stringify(ex.answer, null, 1));
+  });
+
+  L.push('', '# DESCRIPTION DE LA MISSION À TRANSFORMER', '', String(description).trim(), '', 'Réponds maintenant uniquement par le JSON.');
+  return L.join('\n');
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { generate, generateParams, describe, preset, defaultState, newStep, readImport, buildPrompt, extractJson, PROMPT_EXAMPLES, STEPS, CONTEXT_FIELDS, PARAM_FIELDS };
+}
+
+/* ====== Compréhension du texte SANS IA : description en français -> étapes ======
+   Même résultat que readImport() : { ok, steps, ctx, notes, warnings, errors }.
+   Principe : découper en phrases et en propositions, repérer le type d'étape par
+   mots-clés, puis extraire les chiffres, factions, coordonnées et noms. */
+
+const strip = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[‘’`]/g, '\'');
+
+/* ---------- nombres (chiffres et mots) ---------- */
+const NUM_WORDS = 'un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt|trente|quarante|cinquante|soixante|cents?|mille';
+const NUM = '(?:\\d+(?:[.,]\\d+)?|(?:' + NUM_WORDS + ')(?:[- ]+(?:et[- ]+)?(?:' + NUM_WORDS + '))*)';
+const reNum = (src, flags) => new RegExp(src.replace(/NUM/g, NUM), flags || '');
+const UNITS = { un: 1, une: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6, sept: 7, huit: 8, neuf: 9, dix: 10, onze: 11, douze: 12, treize: 13, quatorze: 14, quinze: 15, seize: 16, vingt: 20, trente: 30, quarante: 40, cinquante: 50, soixante: 60 };
+function parseNum(s) {
+  s = strip(s).trim();
+  if (/^\d/.test(s)) return parseFloat(s.replace(',', '.'));
+  let total = 0;
+  let cur = 0;
+  s.split(/[\s-]+/).forEach((w) => {
+    if (w === 'et' || !w) return;
+    if (/^cents?$/.test(w)) { cur = (cur || 1) * 100; return; }
+    if (w === 'mille') { total += (cur || 1) * 1000; cur = 0; return; }
+    if (w === 'vingt' && cur === 4) { cur = 80; return; }
+    if (UNITS[w]) cur += UNITS[w];
+  });
+  return total + cur;
+}
+const numIn = (n, re) => { const m = re.exec(n); return m ? parseNum(m[1]) : undefined; };
+
+/* ---------- découpage ---------- */
+function splitSentences(text) {
+  return String(text).replace(/\r/g, '').split(/[.!?]+(?=\s|$)|[\n;]+|\s+(?=\d{1,2}\)\s)/).map((s) => s.trim().replace(/^\d{1,2}\)\s*/, '')).filter(Boolean);
+}
+
+const PAR_WORDS = 'en meme temps|simultanement|parallelement|pendant ce temps|pendant que|tandis que';
+const SEQ_WORDS = 'puis|ensuite|apres quoi|apres cela|apres ca|apres avoir|apres que|apres|une fois que|une fois|avant de|et enfin|enfin|finalement|pour finir|pour terminer|a la suite';
+const CONNECT = new RegExp('\\b(' + PAR_WORDS + ')\\b|\\b(' + SEQ_WORDS.replace('apres|', 'apres(?!\\s+' + NUM + '\\s+(?:minutes?|min|secondes?|heures?))|') + ')\\b', 'g');
+
+const edge = (s) => s.replace(/^[\s,:-]+|[\s,:-]+$/g, '').replace(/^(?:et|ou|mais)\s+/i, '').replace(/\s+(?:et|ou|mais)$/i, '').replace(/^[\s,:-]+|[\s,:-]+$/g, '');
+
+/* Coupe une phrase aux mots de liaison (« puis », « en même temps »…) */
+function cutClauses(sentence) {
+  const ns = strip(sentence);
+  const src = ns.length === sentence.length ? sentence : ns;
+  const out = [];
+  let last = 0;
+  let rel = 'seq';
+  let m;
+  CONNECT.lastIndex = 0;
+  const push = (a, b, r) => {
+    const piece = edge(src.slice(a, b));
+    if (piece) out.push({ orig: piece, n: strip(piece), rel: r });
+  };
+  while ((m = CONNECT.exec(ns)) !== null) {
+    push(last, m.index, rel);
+    rel = m[1] ? 'par' : 'seq';
+    last = m.index + m[0].length;
+    if (m[0].length === 0) CONNECT.lastIndex++;
+  }
+  push(last, ns.length, rel);
+  return out;
+}
+
+/* ---------- reconnaissance du type d'étape ---------- */
+const PERSONS = 'pilotes?|prisonniers?|captifs?|civils?|journalistes?|medecins?|scientifiques?|soldats?|equipage|agents?|otages?|ingenieurs?|diplomates?';
+const OBJECTS = 'caisses?|colis|documents?|objets?|ravitaillement|munitions|echantillons?|valises?|dossiers?|equipements?|fournitures?|sacs?|armes?|medicaments?|puces?|disques?';
+const PATTERNS = [
+  { type: 'auto', w: 10, re: reNum('\\bmissions?\\s+(?:automatiques?|aleatoires?|au hasard|generees?|enchainees?)|\\b(?:soiree|mission|partie)s?\\s+publiques?|\\benchain\\w*\\s+(?:de\\s+|des\\s+)?(?:NUM\\s+)?missions?|\\b' + NUM + '\\s+missions?\\b') },
+  { type: 'otage', w: 10, re: new RegExp('\\botages?\\b') },
+  { type: 'otage', w: 9, re: new RegExp('\\b(?:liber|delivr|secour|sauv|extrai|exfiltr)\\w*\\b[^.]{0,40}?\\b(?:' + PERSONS + ')\\b') },
+  { type: 'contreattaque', w: 10, re: /\bcontre[- ]?attaqu|\briposte/ },
+  { type: 'contreattaque', w: 8, re: /\b(?:ennemis?|ils|miliciens?|rebelles?|insurges?|afghans?|russes?|csat|fia|aaf)\b[^.]{0,30}?\b(?:attaque|attaquent|lance|lancent|assaillent|donnent l'assaut|passent a l'offensive)\b[^.]{0,30}?\b(?:base|camp|position|joueurs?)\b/ },
+  { type: 'renfortterrestre', w: 9, re: /\brenforts?\s+(?:ennemis?|terrestres?|adverses?|hostiles?)\b|\bennemis?\s+(?:recoivent|appellent|font venir)\s+des\s+renforts?/ },
+  { type: 'appuihelico', w: 9, re: /\bhelico(?:ptere)?s?\b/ },
+  { type: 'insertion', w: 9, re: /\binsertions?\b|\bheliporte|\bparachut|\bdepose?s?\s+(?:de\s+)?(?:troupes|soldats|infanterie)/ },
+  { type: 'surveillance', w: 8, re: /\b(?:evenements?|imprevus?|surprises?|embuscades?)\b|\bsurveill\w*/ },
+  { type: 'presence', w: 9, re: /\bpresence\s+(?:ennemie|hostile)\b[^.]{0,40}\b(?:carte|partout|villages|villes|lieux)\b|\b(?:ennemis?|hostiles?)\s+partout\b/ },
+  { type: 'occupation', w: 8, re: /\b(?:occup\w*|garnison|garnie|garnis|tenue?s?\s+par|defendue?s?\s+par|presence\s+(?:ennemie|hostile))\b/ },
+  { type: 'occupation', w: 6, re: /\b(?:ennemis?|hostiles?|insurges?|miliciens?|rebelles?|soldats\s+ennemis)\s+(?:dans|sur|autour|(?:a|au)\s+(?!hasard\b))/ },
+  { type: 'apprehender', w: 9, re: /\b(?:captur\w*|arret(?:er|ent|ez)|apprehend\w*|interpell\w*|enlev(?:er|ent|ez)|kidnapp\w*)\b/ },
+  { type: 'voler', w: 9, re: /\b(?:vol(?:er|ent|ez)|derob\w*|s'?empar\w*|detourn(?:er|ent|ez)|subtilis\w*)\b/ },
+  { type: 'telecharger', w: 9, re: /\b(?:pirat\w*|hack\w*|telecharg\w*|copi(?:er|ent|ez)\s+les\s+donnees|recuper\w*\s+les\s+donnees)\b/ },
+  { type: 'securiser', w: 9, re: /\bliber\w*\s+(?:le|la|l'|les)\s*(?:village|ville|zone|secteur|quartier|base|aeroport|port|carrefour)|\b(?:securis|controler|controlent|verrouill|defend(?:re|ent|ez)|tenir|tiennent|tenez|garder|gardent)\w*/ },
+  { type: 'detruire', w: 8, re: /\b(?:detrui\w*|dynamit\w*|sabot\w*|faire sauter|font sauter|razer|raser|aneanti\w*|elimin\w*|abatt\w*|neutralis\w*|tu(?:er|ent|ez))\b/ },
+  { type: 'collecter', w: 8, re: new RegExp('\\b(?:recuper|ramass|collect|rassembl|rapport|trouv|ramen|ramene)\\w*\\b[^.]{0,40}?\\b(?:' + OBJECTS + ')\\b') },
+  { type: 'rejoindre', w: 7, re: /\b(?:rejoign\w*|rejoindre|atteign\w*|atteindre|se rendre|se rendent|aller\s+(?:a|au|vers|jusqu)|point de rendez-vous|point d'extraction|zone d'extraction|rallier\w*)\b/ },
+  { type: 'pause', w: 9, re: reNum('\\bpause\\b|\\battendre\\s+' + NUM + '\\s*(?:secondes?|minutes?|min|s)\\b|\\b(?:apres|au bout de|dans)\\s+' + NUM + '\\s*(?:secondes?|minutes?|min)\\b') },
+  { type: 'renfortallie', w: 8, re: /\brenforts?\s+allies?\s+(?:en plus|supplementaires?)|\brenforts?\s+(?:alli\w*\s+)?supplementaires?\b/ },
+];
+
+function typeHits(n) {
+  const hits = [];
+  PATTERNS.forEach((p) => {
+    const m = p.re.exec(n);
+    if (m) hits.push({ type: p.type, idx: m.index, w: p.w, len: m[0].length });
+  });
+  return hits;
+}
+function classify(n) {
+  const hits = typeHits(n);
+  if (!hits.length) return null;
+  hits.sort((a, b) => (b.w - a.w) || (a.idx - b.idx));
+  return hits[0];
+}
+
+/* Une proposition qui contient deux étapes différentes est coupée en deux */
+function splitByTypes(c) {
+  const hits = typeHits(c.n);
+  const byType = {};
+  hits.forEach((h) => { if (!byType[h.type] || h.w > byType[h.type].w) byType[h.type] = h; });
+  const list = Object.values(byType).sort((a, b) => a.idx - b.idx);
+  // deux détections sur le même mot (ex. otage + libérer…pilotes) ne comptent pas comme deux étapes
+  const kept = [];
+  list.forEach((h) => {
+    const near = kept.find((k) => Math.abs(k.idx - h.idx) < 12);
+    if (near) { if (h.w > near.w) kept[kept.indexOf(near)] = h; } else kept.push(h);
+  });
+  if (kept.length < 2) return [c];
+  const cuts = [];
+  for (let i = 1; i < kept.length; i++) {
+    const a = kept[i - 1].idx + kept[i - 1].len;
+    const b = kept[i].idx;
+    const seg = c.n.slice(a, b);
+    let best = -1;
+    let bestLen = 0;
+    const re = /,| et | ainsi que | mais /g;
+    let m;
+    while ((m = re.exec(seg)) !== null) { best = m.index; bestLen = m[0].length; }
+    if (best >= 0) cuts.push({ at: a + best, len: bestLen, joiner: seg.slice(best, best + bestLen) });
+  }
+  if (!cuts.length) return [c];
+  const out = [];
+  let last = 0;
+  let rel = c.rel;
+  const src = c.n.length === c.orig.length ? c.orig : c.n;
+  cuts.forEach((k) => {
+    const piece = edge(src.slice(last, k.at));
+    if (piece) out.push({ orig: piece, n: strip(piece), rel });
+    last = k.at + k.len;
+    rel = /ainsi que/.test(k.joiner) || /\bet\b/.test(k.joiner) || /,/.test(k.joiner) ? 'par' : 'seq';
+  });
+  const tail = edge(src.slice(last));
+  if (tail) out.push({ orig: tail, n: strip(tail), rel });
+  return out.length ? out : [c];
+}
+
+/* ---------- contexte (hors étapes) ---------- */
+const CTX_RES = {
+  renforts: [reNum('\\b(' + NUM + ')\\s+(?:appels?|demandes?|possibilites?)\\s+(?:de\\s+)?renforts?'), reNum('\\b(' + NUM + ')\\s+renforts?\\s+allies?\\b'), reNum('\\brenforts?\\s+allies?\\s*(?:[:x=]|limites?\\s+a)\\s*(' + NUM + ')\\b')],
+  vehicules: [reNum('\\b(' + NUM + ')\\s+(?:points?\\s+de\\s+)?vehicules?\\s+(?:achetables?|au garage|a acheter|disponibles?)')],
+  remuneration: [reNum('\\b(' + NUM + ')\\s*(?:euros?|€)\\b')],
+};
+function extractContext(n, ctx) {
+  let found = false;
+  Object.entries(CTX_RES).forEach(([k, list]) => {
+    for (const re of list) {
+      const v = numIn(n, re);
+      if (v !== undefined) { ctx[k] = String(v); found = true; break; }
+    }
+  });
+  if (/\b(?:aucun|pas de|sans)\s+(?:appels?\s+de\s+)?renforts?\b/.test(n)) { ctx.renforts = '0'; found = true; }
+  if (/\b(?:pas de|sans|aucune?)\s+(?:trafic|vie civile|civils?|habitants?)\b/.test(n)) { ctx.trafic = false; found = true; }
+  else if (/\b(?:trafic|vie civile|civils?|habitants?)\b/.test(n)) { ctx.trafic = true; found = true; }
+  return found;
+}
+
+/* ---------- factions, lieux, rayon ---------- */
+const FACTION_WORDS = [
+  [7, /\betat islamique\b|\bdaech\b|\bdaesh\b|\bisis\b/],
+  [6, /\bafghan\w*|\btaliban\w*|\bradica\w*|\bislamistes?\b/],
+  [4, /\bboko\s*haram\b|\bafricain\w*|\bdjihadistes?\b/],
+  [5, /\brusses?\b|\brussie\b|\bspetsnaz\b/],
+  [3, /\bfia\b|\brebelles?\b|\binsurges?\b|\bguerilla\b|\bpartisans?\b|\bmilice\w*\s+rebelle/],
+  [1, /\baaf\b|\barmee\s+(?:altisienne|d'altis)\b/],
+  [0, /\bcsat\b/],
+  [2, /\bamericain\w*|\bblufor\b|\botan\b|\busa\b/],
+];
+function findFaction(n) {
+  let best = null;
+  FACTION_WORDS.forEach(([num, re]) => {
+    const m = re.exec(n);
+    /* num devient l'id du registre ; legacy garde l'index, dont la note
+       sur les « rebelles » a encore besoin. */
+    if (m && (!best || m.index < best.idx)) best = { num: factionFromLegacy(num), legacy: num, idx: m.index, word: m[0] };
+  });
+  return best;
+}
+const LOC_WORDS = [
+  ['NameVillage', /\bvillages?\b|\bhameaux?\b/],
+  ['NameCity', /\bvilles?\b|\bcites?\b/],
+  ['NameLocal', /\blieux?\s+particuliers?\b|\bendroits?\s+particuliers?\b/],
+  ['Name', /\blieux?\s+communs?\b|\bendroits?\s+communs?\b/],
+  ['Strategic', /\bbases?\s+militaires?\b|\bsites?\s+strategiques?\b/],
+];
+function findLocs(n) { return LOC_WORDS.filter(([, re]) => re.test(n)).map(([k]) => k); }
+
+function findRadius(n) {
+  let m = reNum('\\b(?:rayon|zone|secteur|perimetre|diametre)\\s+(?:de\\s+|d\'environ\\s+)?(' + NUM + ')\\s*(km|kilometres?|m|metres?)\\b').exec(n)
+    || reNum('\\b(' + NUM + ')\\s*(km|kilometres?|m|metres?)\\s+de\\s+(?:rayon|diametre|cote)\\b').exec(n)
+    || reNum('\\bmissions?(?:\\s+[a-z]+)?\\s+de\\s+(' + NUM + ')\\s*(km|kilometres?|m|metres?)\\b').exec(n);
+  if (!m) return undefined;
+  const v = parseNum(m[1]);
+  return /^k/.test(m[2]) ? Math.round(v * 1000) : Math.round(v);
+}
+function findDistance(n) {
+  const m = reNum('\\b(?:a|depuis|distance(?:\\s+de)?)\\s+(' + NUM + ')\\s*(km|m|metres?)\\b').exec(n);
+  if (!m) return undefined;
+  const v = parseNum(m[1]);
+  return /^k/.test(m[2]) ? Math.round(v * 1000) : Math.round(v);
+}
+function findDifficulty(n) {
+  let m = reNum('\\bdifficulte\\s*(?:de|:)?\\s*(' + NUM + ')\\b').exec(n);
+  if (m) return parseNum(m[1]);
+  if (/\b(?:tres difficile|extreme|hardcore)\b/.test(n)) return 4;
+  if (/\bdifficile\b/.test(n)) return 3;
+  if (/\b(?:moyenne?|normale?|standard)\b/.test(n)) return 2;
+  if (/\bfacile\b/.test(n)) return 1;
+  return undefined;
+}
+
+/* ---------- coordonnées ---------- */
+function findCoords(orig) {
+  const out = [];
+  const keyed = /\bx\s*[:=]?\s*(-?\d{3,6}(?:[.,]\d+)?)\s*[,;/ ]*\s*y\s*[:=]?\s*(-?\d{3,6}(?:[.,]\d+)?)/gi;
+  const plain = /(-?\d{3,6}(?:[.]\d+)?)\s*(?:,\s+|;\s*|\/\s*|\s+(?:et|x|y)\s+|\s+|,(?=\d{4,}))\s*(-?\d{3,6}(?:[.]\d+)?)/g;
+  let m;
+  while ((m = keyed.exec(orig)) !== null) out.push({ x: parseFloat(m[1].replace(',', '.')), y: parseFloat(m[2].replace(',', '.')), index: m.index, len: m[0].length });
+  if (!out.length) {
+    while ((m = plain.exec(orig)) !== null) out.push({ x: parseFloat(m[1]), y: parseFloat(m[2]), index: m.index, len: m[0].length });
+  }
+  return out;
+}
+const posStr = (c) => c.x + ', ' + c.y + ', 0';
+function withoutCoords(orig) {
+  let s = orig.replace(/(?:\s+(?:en|aux?\s+coordonn[ée]es?|à|a|sur|vers|autour\s+de|dans))?\s*\(?\s*(?:x\s*[:=]?\s*)?-?\d{3,6}(?:[.,]\d+)?\s*[,;/ ]*\s*(?:et\s+|y\s*[:=]?\s*)?-?\d{3,6}(?:[.,]\d+)?\s*\)?(?=\s|[,;:.]|$)/gi, ' ');
+  s = s.replace(/\s{2,}/g, ' ').replace(/\s+([,;:.])/g, '$1').trim();
+  let prev;
+  do { prev = s; s = s.replace(/[\s,;:]+(?:en|a|à|au|aux|vers|sur|dans|de|du|des|la|le|les|et|puis|pour|par)\s*$/i, '').trim(); } while (s !== prev);
+  return s;
+}
+
+/* ---------- noms et textes ---------- */
+const INFINITIVES = [
+  [/^liber\w*/i, 'Libérer'], [/^delivr\w*/i, 'Délivrer'], [/^secour\w*/i, 'Secourir'], [/^sauv\w*/i, 'Sauver'],
+  [/^detrui\w*|^détrui\w*/i, 'Détruire'], [/^dynamit\w*/i, 'Dynamiter'], [/^sabot\w*/i, 'Saboter'], [/^elimin\w*|^élimin\w*/i, 'Éliminer'], [/^neutralis\w*/i, 'Neutraliser'],
+  [/^recuper\w*|^récupér\w*/i, 'Récupérer'], [/^ramass\w*/i, 'Ramasser'], [/^collect\w*/i, 'Collecter'], [/^ramen\w*/i, 'Ramener'], [/^rapport\w*/i, 'Rapporter'],
+  [/^captur\w*/i, 'Capturer'], [/^arret\w*|^arrêt\w*/i, 'Arrêter'], [/^apprehend\w*|^appréhend\w*/i, 'Appréhender'], [/^interpell\w*/i, 'Interpeller'],
+  [/^rejoign\w*|^rejoindre/i, 'Rejoindre'], [/^atteign\w*|^atteindre/i, 'Atteindre'], [/^securis\w*|^sécuris\w*/i, 'Sécuriser'], [/^control\w*|^contrôl\w*/i, 'Contrôler'], [/^defend\w*|^défend\w*/i, 'Défendre'],
+  [/^vol(?:e|ent|ez|er)\b/i, 'Voler'], [/^derob\w*|^dérob\w*/i, 'Dérober'], [/^pirat\w*/i, 'Pirater'], [/^hack\w*/i, 'Pirater'], [/^telecharg\w*|^télécharg\w*/i, 'Télécharger'],
+];
+const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+function cleanTail(s, max) {
+  s = withoutCoords(s).replace(/[\s,;:.!?]+$/g, '').replace(/\s{2,}/g, ' ');
+  if (s.length > (max || 90)) { s = s.slice(0, max || 90); s = s.slice(0, s.lastIndexOf(' ') > 40 ? s.lastIndexOf(' ') : s.length); }
+  return s.trim();
+}
+/* Texte de la consigne : à partir du verbe, mis à l'infinitif */
+function consigneFrom(orig, n, verbRe, fallback) {
+  const m = verbRe ? verbRe.exec(n) : null;
+  if (!m) return fallback;
+  let s = orig.slice(m.index);
+  const first = s.split(/\s+/)[0];
+  const inf = INFINITIVES.find(([re]) => re.test(strip(first)));
+  if (inf) s = inf[1] + s.slice(first.length);
+  s = cleanTail(s);
+  return s ? cap(s) : fallback;
+}
+const DET = /^(?:(?:les|le|la|l'|un|une|des|du|de la|de l'|d'|ce|cet|cette|ces|mes|nos|leurs?|leur)\s*|(?:NUMX)\s+)+/;
+const DETX = new RegExp(DET.source.replace('NUMX', NUM), 'i');
+/* Groupe nominal qui suit un verbe : « le dépôt de munitions » -> « Dépôt de munitions » */
+function nounAfter(orig, n, verbRe) {
+  const m = verbRe.exec(n);
+  if (!m) return '';
+  let s = orig.slice(m.index + m[0].length).replace(/^\s+/, '');
+  s = s.replace(DETX, '');
+  const cut = /(?:^|\s)(?:dans|a|au|aux|en|vers|pres|autour|situe\w*|retenu\w*|detenu\w*|avec|pour|sur|puis|et|ou|qui|que|par|depuis|jusqu\w*|contre)\b|[,;:(]|\s-\s/i.exec(strip(s));
+  if (cut) s = s.slice(0, cut.index);
+  s = s.trim().split(/\s+/).slice(0, 5).join(' ');
+  return cap(s.replace(/[.!?]+$/, ''));
+}
+const slugNoun = (noun, fallback) => {
+  const w = strip(noun).split(/[^a-z0-9]+/).filter((x) => x && !['de', 'du', 'des', 'la', 'le', 'les', 'un', 'une'].includes(x))[0];
+  return w ? w.replace(/s$/, '') : fallback;
+};
+const idList = (base, n) => Array.from({ length: Math.max(1, Math.min(n, 12)) }, (_, i) => base + '_' + i).join(', ');
+
+/* ---------- construction des étapes ---------- */
+function interpretText(text) {
+  const res = { ok: false, local: true, steps: [], ctx: {}, notes: [], warnings: [], errors: [] };
+  const raw = String(text == null ? '' : text).trim();
+  if (!raw) { res.errors.push('Écris d’abord ta mission.'); return res; }
+  const whole = strip(raw);
+  extractContext(whole, res.ctx);
+  const firstFac = findFaction(whole);
+  const g = { last: undefined, first: firstFac ? firstFac.num : undefined, noFaction: 0, rebelles: false, noCoords: 0, noNames: [] };
+
+  const clauses = [];
+  splitSentences(raw).forEach((s) => cutClauses(s).forEach((c) => clauses.push(c)));
+  const parts = [];
+  clauses.forEach((c) => splitByTypes(c).forEach((p) => parts.push(p)));
+
+  const tmp = defaultState();
+  const made = [];
+  parts.forEach((c) => {
+    let hit = classify(c.n);
+    if (hit && hit.type !== 'pause' && /\b(?:pas d[e']|sans|aucune?|jamais)\s+(?:[a-z']+\s+){0,2}$/.test(c.n.slice(0, hit.idx))) {
+      res.notes.push('Ignoré (négation) : « ' + c.orig + ' ».');
+      return;
+    }
+    if (!hit) {
+      const ctxOnly = extractContext(c.n, {});
+      const words = c.orig.split(/\s+/).filter(Boolean).length;
+      if (!ctxOnly && words >= 3) res.warnings.push('Je n’ai pas compris cette partie : « ' + c.orig + ' ». Ajoute l’étape à la main si besoin.');
+      return;
+    }
+    const st = buildStep(hit.type, c, g, tmp);
+    st.open = false;
+    made.push({ st, rel: c.rel });
+  });
+
+  // l'attente : une tâche attend sauf si l'étape suivante est « en même temps »
+  made.forEach((m, i) => {
+    if (STEPS[m.st.type].task) {
+      const next = made[i + 1];
+      m.st.wait = next ? next.rel !== 'par' : true;
+    }
+    res.steps.push(m.st);
+  });
+
+  if (g.noFaction) res.notes.push('Faction ennemie non précisée pour ' + g.noFaction + ' étape' + (g.noFaction > 1 ? 's' : '') + ' : CSAT par défaut (à changer si besoin).');
+  if (g.sameZone) res.notes.push('Une zone sans coordonnées reprend celle de l\u2019étape précédente (occupation ou surveillance).');
+  if (g.rebelles) res.notes.push('« Rebelles » ou « insurgés » compris comme la faction FIA (3). Dis « afghans », « russes »… pour une autre faction.');
+  if (g.noCoords) res.notes.push('Aucune coordonnée dans ton texte pour ' + g.noCoords + ' position' + (g.noCoords > 1 ? 's' : '') + ' : à renseigner (elles seront en rouge).');
+  res.ok = res.steps.length > 0;
+  if (!res.ok) {
+    res.errors.push(Object.keys(res.ctx).length
+      ? 'J’ai compris les réglages de départ (renforts, trafic…) mais aucune étape. Décris ce que les joueurs doivent faire, par exemple « libérer deux otages, puis contre-attaque afghane ».'
+      : 'Je n’ai reconnu aucune étape. Essaie des phrases comme « libérer deux otages, puis contre-attaque afghane ».');
+  }
+  return res;
+}
+
+function buildStep(type, c, g, tmp) {
+  const st = newStep(tmp, type);
+  const v = st.v;
+  const n = c.n;
+  const o = c.orig;
+  const def = STEPS[type];
+  const coords = findCoords(o);
+  const fac = findFaction(n);
+  const hasField = (k) => def.fields.some((f) => f.k === k);
+
+  if (hasField('faction')) {
+    if (fac) { v.faction = String(fac.num); g.last = fac.num; if (fac.legacy === 3 && /rebelle|insurge|guerilla|partisan/.test(fac.word)) g.rebelles = true; }
+    else if (g.last !== undefined) v.faction = String(g.last);
+    else if (g.first !== undefined) v.faction = String(g.first);
+    else g.noFaction++;
+  }
+  const zoneStep = type === 'occupation' || type === 'surveillance';
+  const setPos = (key, co) => {
+    if (co) { v[key] = posStr(co); if (zoneStep && key === 'centre') g.zone = posStr(co); }
+    else if (zoneStep && key === 'centre' && g.zone) { v[key] = g.zone; g.sameZone = true; }
+    else { v[key] = ''; g.noCoords++; }
+  };
+  // la coordonnée précédée de « ramener / livrer / base » est la destination
+  const delivery = coords.find((k) => /(?:ramen|livr|retour|base|rejoign|evacu|exfil)\w*[^0-9]{0,40}$/.test(n.slice(Math.max(0, k.index - 45), k.index)));
+  const mainCo = coords.find((k) => k !== delivery) || (coords.length === 1 && delivery ? null : coords[0]);
+  const radius = findRadius(n);
+  const dist = findDistance(n);
+
+  switch (type) {
+    case 'auto': {
+      let nb = 0;
+      const reNb = reNum('\\b(' + NUM + ')\\s+missions?\\b(?!\\s+publiques?)', 'g');
+      let mm;
+      while ((mm = reNb.exec(n)) !== null) nb = Math.max(nb, parseNum(mm[1]));
+      if (nb) v.nb = String(nb);
+      if (radius) v.rayon = String(radius);
+      const locs = findLocs(n);
+      if (locs.length) v.lieux = locs;
+      if (/\b(?:sans|pas de|aucun)\s+civils?\b/.test(n)) v.civils = false; else if (/\bcivils?\b/.test(n)) v.civils = true;
+      const t = numIn(n, reNum('\\b(' + NUM + ')\\s+objectifs?\\b'));
+      if (t) v.taches = String(t);
+      const d = findDifficulty(n);
+      if (d) v.diff = String(d);
+      if (fac) { v.alea = false; v.faction = String(fac.num); }
+      else v.alea = true;
+      break;
+    }
+    case 'occupation':
+      setPos('centre', mainCo);
+      if (radius) v.taille = String(radius);
+      break;
+    case 'surveillance': {
+      setPos('centre', mainCo);
+      if (radius) v.rayon = String(radius);
+      let m = reNum('\\b(' + NUM + ')\\s+(?:et|a)\\s+(' + NUM + ')\\s+(?:evenements?|surprises?|imprevus?)').exec(n);
+      if (m) { v.min = String(parseNum(m[1])); v.max = String(parseNum(m[2])); } else {
+        m = reNum('\\b(' + NUM + ')\\s+(?:evenements?|surprises?|imprevus?|embuscades?)').exec(n);
+        if (m) { v.min = String(parseNum(m[1])); v.max = String(parseNum(m[1])); }
+      }
+      break;
+    }
+    case 'presence': {
+      const locs = findLocs(n);
+      if (locs.length) v.lieux = locs;
+      if (radius) v.rayon = String(radius);
+      v.toujours = /\btous\s+les\b|\bpartout\b|\bchaque\b|\btoutes\s+les\b/.test(n);
+      break;
+    }
+    case 'otage': {
+      setPos('centre', mainCo);
+      setPos('livraison', delivery || (coords.length > 1 ? coords[1] : null));
+      let count = numIn(n, reNum('\\b(' + NUM + ')\\s+(?:[a-z\']+\\s+){0,2}?(?:' + PERSONS + ')\\b'));
+      if (!count) count = /\b(?:pilotes|prisonniers|captifs|otages|civils|journalistes|medecins|scientifiques|soldats|agents|ingenieurs|diplomates)\b/.test(n) ? 2 : 1;
+      v.otages = idList('otage', count);
+      const noun = nounAfter(o, n, /\b(?:liber|delivr|secour|sauv|extrai|exfiltr)\w*\b/) || nounAfter(o, n, /\b(?:les|des|\d+)\b/);
+      v.nom = noun && !/^\d/.test(noun) ? noun : 'Otages';
+      v.desc = consigneFrom(o, n, /\b(?:liber|delivr|secour|sauv|extrai|exfiltr)\w*\b/, 'Libérer les otages');
+      break;
+    }
+    case 'collecter': {
+      setPos('centre', mainCo);
+      const count = numIn(n, reNum('\\b(' + NUM + ')\\s+(?:[a-z\']+\\s+){0,2}?(?:' + OBJECTS + ')\\b')) || (/\b(?:caisses|colis|documents|objets|dossiers|armes|medicaments)\b/.test(n) ? 2 : 1);
+      const verb = /\b(?:recuper|ramass|collect|rassembl|rapport|trouv|ramen)\w*\b/;
+      const noun = nounAfter(o, n, verb);
+      v.nom = noun || 'Objets';
+      v.objets = idList(slugNoun(noun, 'objet'), count);
+      v.desc = consigneFrom(o, n, verb, 'Récupérer les objets');
+      break;
+    }
+    case 'detruire': {
+      setPos('centre', mainCo);
+      const verb = /\b(?:detrui|dynamit|sabot|elimin|abatt|neutralis|aneanti|raser|razer|tu(?:er|ent|ez)|faire sauter|font sauter)\w*\b|\bfaire sauter\b/;
+      const noun = nounAfter(o, n, verb);
+      const count = numIn(n, reNum('\\b(?:detrui|dynamit|sabot|elimin|abatt|neutralis|aneanti|tu)\\w*\\s+(' + NUM + ')\\b')) || 1;
+      v.nom = noun || 'Cible';
+      v.cibles = idList(slugNoun(noun, 'cible'), count);
+      v.desc = consigneFrom(o, n, verb, 'Détruire la cible');
+      break;
+    }
+    case 'apprehender': {
+      setPos('centre', mainCo);
+      setPos('livraison', delivery || (coords.length > 1 ? coords[1] : null));
+      const verb = /\b(?:captur|arret|apprehend|interpell|enlev|kidnapp)\w*\b/;
+      const noun = nounAfter(o, n, verb);
+      v.nom = noun || 'Cible';
+      v.cible = slugNoun(noun, 'cible') + '_0';
+      v.desc = consigneFrom(o, n, verb, 'Capturer la cible et la livrer');
+      break;
+    }
+    case 'rejoindre': {
+      setPos('centre', mainCo);
+      const verb = /\b(?:rejoign\w*|rejoindre|atteign\w*|atteindre|se rendre|se rendent|aller\s+(?:a|au|vers|jusqu)|rallier?\w*)\b|\bpoint de rendez-vous\b|\bpoint d'extraction\b|\bzone d'extraction\b/;
+      let noun = nounAfter(o, n, /\b(?:rejoign\w*|rejoindre|atteign\w*|atteindre|rallier?\w*)\b|\bse rendre\s+(?:a|au|aux|vers)?\b|\baller\s+(?:a|au|vers|jusqu'?(?:a|au)?)\b/);
+      if (!noun && /point de rendez-vous/.test(n)) noun = 'Point de rendez-vous';
+      if (!noun && /(?:point|zone) d'extraction/.test(n)) noun = 'Point d’extraction';
+      v.nom = noun || 'Point à rejoindre';
+      v.desc = consigneFrom(o, n, verb, 'Rejoindre le point');
+      break;
+    }
+    case 'securiser': {
+      setPos('centre', mainCo);
+      const verb = /\b(?:securis|controle|controler|defend|tenir|tiennent|tenez|garder|gardent|verrouill|liber)\w*\b/;
+      let noun = nounAfter(o, n, verb);
+      noun = noun.replace(/^(?:Zone|Secteur)\s+(?:de|du|d')\s*/i, '');
+      v.nom = cap(noun) || 'Zone';
+      if (radius) v.taille = String(radius);
+      break;
+    }
+    case 'voler': {
+      setPos('centre', mainCo);
+      const verb = /\b(?:vol(?:er|ent|ez)|derob|s'?empar|detourn|subtilis)\w*\b(?:\s+d[eu']s?)?/;
+      const noun = nounAfter(o, n, verb);
+      v.nom = noun || 'Véhicule';
+      v.cible = slugNoun(noun, 'vehicule') + '_0';
+      v.desc = consigneFrom(o, n, /\b(?:vol(?:er|ent|ez)|derob|s'?empar|detourn|subtilis)\w*\b/, 'Voler le véhicule');
+      break;
+    }
+    case 'telecharger': {
+      setPos('centre', mainCo);
+      const objM = /\b(ordinateur|serveur|laptop|terminal|poste|console|base de donnees)\b/.exec(n);
+      v.objet = (objM ? objM[1].replace(/\s+/g, '_').replace('base_de_donnees', 'serveur') : 'ordinateur') + '_0';
+      v.nom = objM ? cap(objM[1]) : 'Ordinateur';
+      v.desc = consigneFrom(o, n, /\b(?:pirat|hack|telecharg|copi|recuper)\w*\b/, 'Récupérer les données');
+      break;
+    }
+    case 'contreattaque': {
+      setPos('centre', mainCo || delivery);
+      const inf = numIn(n, reNum('\\b(' + NUM + ')\\s+(?:groupes?|escouades?|sections?|equipes?)\\b'));
+      const veh = numIn(n, reNum('\\b(' + NUM + ')\\s+(?:vehicules?|blindes?|camions?|vehicules? blindes?|engins?)\\b'));
+      if (inf !== undefined) v.inf = String(inf);
+      if (veh !== undefined) v.veh = String(veh);
+      if (dist) v.dist = String(dist);
+      break;
+    }
+    case 'renfortterrestre':
+    case 'appuihelico':
+    case 'insertion':
+      setPos('centre', mainCo);
+      if (dist) v.dist = String(dist);
+      break;
+    case 'pause': {
+      let m = reNum('\\b(' + NUM + ')\\s*(minutes?|min|secondes?|s)\\b').exec(n);
+      if (m) v.s = String(Math.round(parseNum(m[1]) * (/^m/.test(m[2]) ? 60 : 1)));
+      break;
+    }
+    case 'renfortallie': {
+      const k = numIn(n, reNum('\\b(' + NUM + ')\\s+(?:renforts?|interventions?)'));
+      if (k !== undefined) v.n = String(k);
+      break;
+    }
+    default:
+      break;
+  }
+  return st;
+}
+
+/* ====== Interface du générateur (DOM) ====== */
+const $ = (id) => document.getElementById(id);
+const STORE_KEY = 'hds-gen-v3';
+const REG_KEY = 'hds-gen-registre-v1';
+
+function freshState() {
+  const s = defaultState();
+  s.mode = 'public';
+  s.tab = 'clair';
+  s.pub = newStep(s, 'auto');
+  s.pub.open = true;
+  return s;
+}
+let state = loadState() || freshState();
+/* Le registre importé survit au rechargement. S'il est illisible on
+   repart sur les factions par défaut, sans bloquer la page. */
+try {
+  const regBrut = localStorage.getItem(REG_KEY);
+  if (regBrut) readRegistre(JSON.parse(regBrut));
+} catch (e) { forgetRegistre(); }
+let reg = {}; // id de champ -> { control, def, errEl, vals, owner }
+let lastCode = { scenario: '', params: '' };
+let lastIssues = [];
+let lastMeta = {};
+let aiResult = null;
+let sampleFn = null;
+let aiCtl = null;
+
+const activeSteps = () => (state.mode === 'public' ? [state.pub] : state.steps);
+const viewState = () => ({ ctx: state.ctx, steps: activeSteps(), params: state.params, nextId: state.nextId });
+
+/* ---------- persistance (confort, facultative) ---------- */
+function saveState() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* stockage indisponible */ }
+  try {
+    if (REGISTRE) localStorage.setItem(REG_KEY, JSON.stringify(REGISTRE));
+    else localStorage.removeItem(REG_KEY);
+  } catch (e) { /* stockage indisponible */ }
+}
+function loadState() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (!s || !s.ctx || !Array.isArray(s.steps) || !s.params || !s.pub || s.pub.type !== 'auto') return null;
+    if (!s.steps.every((st) => STEPS[st.type] && st.v) || !s.pub.v) return null;
+    const d = defaultState();
+    s.ctx = Object.assign(d.ctx, s.ctx);
+    s.params = Object.assign(d.params, s.params);
+    s.mode = s.mode === 'prive' ? 'prive' : 'public';
+    s.tab = ['clair', 'code', 'params'].includes(s.tab) ? s.tab : 'clair';
+    s.nextId = Math.max(s.nextId || 1, s.pub.id + 1, ...s.steps.map((st) => st.id + 1), 1);
+    return s;
+  } catch (e) { return null; }
+}
+
+/* ---------- outils DOM ---------- */
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  Object.entries(attrs || {}).forEach(([k, v]) => {
+    if (v === false || v == null) return;
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  });
+  kids.flat().forEach((c) => { if (c != null && c !== false) e.append(c); });
+  return e;
+}
+function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function setAcc(el, open) {
+  el.classList.toggle('open', open);
+  const inner = el.firstElementChild;
+  if (open) inner.removeAttribute('inert'); else inner.setAttribute('inert', '');
+}
+let toastTimer = 0;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ---------- infobulles ---------- */
+let tipFor = null;
+function tipButton(text) { return h('button', { type: 'button', class: 'tip', 'data-tip': text, 'aria-label': 'Aide' }, 'i'); }
+function showTip(btn) {
+  const box = $('tipbox');
+  box.textContent = btn.dataset.tip;
+  box.hidden = false;
+  const r = btn.getBoundingClientRect();
+  const w = box.offsetWidth;
+  const hh = box.offsetHeight;
+  box.style.left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - 8)) + 'px';
+  box.style.top = (r.top - hh - 10 < 8 ? r.bottom + 10 : r.top - hh - 10) + 'px';
+  tipFor = btn;
+  btn.setAttribute('aria-describedby', 'tipbox');
+}
+function hideTip() {
+  $('tipbox').hidden = true;
+  if (tipFor) tipFor.removeAttribute('aria-describedby');
+  tipFor = null;
+}
+document.addEventListener('mouseover', (e) => { const b = e.target.closest && e.target.closest('.tip'); if (b && b !== tipFor) showTip(b); });
+document.addEventListener('mouseout', (e) => { const b = e.target.closest && e.target.closest('.tip'); if (b && document.activeElement !== b) hideTip(); });
+document.addEventListener('focusin', (e) => { const b = e.target.closest && e.target.closest('.tip'); if (b) showTip(b); });
+document.addEventListener('focusout', (e) => { if (e.target.closest && e.target.closest('.tip')) hideTip(); });
+document.addEventListener('scroll', hideTip, true);
+
+/* ---------- libellés courts et infobulles ---------- */
+const SHORT = {
+  centre: 'Position', livraison: 'Livraison', otages: 'Otages', objets: 'Objets', cibles: 'Cibles', cible: 'Cible', objet: 'Objet',
+  ok: 'Si réussie', ko: 'Si échouée', nom: 'Nom', desc: 'Consigne', taille: 'Rayon (m)', rayon: 'Rayon (m)', visible: 'Zone visible',
+  faction: 'Faction', nb: 'Missions', diff: 'Difficulté', lieux: 'Lieux', civils: 'Civils', alea: 'Ennemi au hasard', taches: 'Objectifs',
+  ratio: 'Densité', min: 'Événements min', max: 'Événements max', toujours: 'Tous les lieux', inf: 'Groupes', veh: 'Véhicules',
+  dist: 'Distance (m)', s: 'Durée (s)', n: 'Nombre',
+  'auto.rayon': 'Taille (m)', 'auto.taches': 'Objectifs par mission', 'securiser.nom': 'Zone', 'rejoindre.nom': 'Point', 'voler.cible': 'Véhicule',
+  'ctx.initiales': 'Tâches faites', 'ctx.remuneration': 'Récompense', 'ctx.vehicules': 'Véhicules', 'ctx.renforts': 'Renforts', 'ctx.camp': 'Camp',
+  'ctx.trafic': 'Vie civile', 'param.base': 'Marqueur de base',
+  'ctx.civTrafic': 'Trafic', 'ctx.civHabitants': 'Habitants',
+  'ctx.civRayon': 'Rayon ambiance', 'ctx.civPortee': 'Portee trafic',
+  'ctx.civOubli': 'Oubli',
+};
+const TIPS = {
+  centre: 'Coordonnées x, y relevées dans l’éditeur. Exemple : 4506, 5729.',
+  livraison: 'Où ramener ou livrer. Coordonnées x, y.',
+  otages: 'Noms de variable des otages posés dans l’éditeur, séparés par des virgules.',
+  objets: 'Noms de variable des objets posés dans l’éditeur, séparés par des virgules.',
+  cibles: 'Noms de variable des cibles posées dans l’éditeur, séparés par des virgules.',
+  cible: 'Nom de variable posé dans l’éditeur.',
+  objet: 'Nom de variable posé dans l’éditeur.',
+  ok: 'Déclencheur de l’éditeur : quand il s’active, la tâche est réussie.',
+  ko: 'Déclencheur de l’éditeur : quand il s’active, la tâche est échouée.',
+  nom: 'Texte affiché aux joueurs.',
+  desc: 'Consigne affichée aux joueurs.',
+  taille: 'Rayon de la zone, en mètres.',
+  rayon: 'Rayon de la zone, en mètres.',
+  visible: 'Affiche la zone sur la carte des joueurs.',
+  faction: 'Sans registre : les factions « mod » demandent Project OPFOR (4, 6, 7) ou RHS AFRF (5). Avec un registre importé, la liste est celle du serveur et le script retombe seul sur une faction disponible si le mod manque.',
+  diff: 'Plus le chiffre est grand, plus c’est dur.',
+  alea: 'La faction ennemie est tirée au hasard à chaque mission.',
+  taches: 'Nombre d’objectifs tirés au hasard dans chaque mission.',
+  nb: 'Nombre de missions qui s’enchaînent.',
+  lieux: 'Types de lieux où les missions peuvent apparaître.',
+  civils: 'Des civils sont présents sur place.',
+  ratio: 'Densité de l’occupation ennemie.',
+  min: 'Minimum d’événements surprises déclenchés quand un joueur entre dans la zone.',
+  max: 'Maximum d’événements surprises déclenchés quand un joueur entre dans la zone.',
+  toujours: 'Décoché : environ un lieu sur quatre est occupé.',
+  dist: 'Distance de départ des troupes, en mètres.',
+  'auto.rayon': 'Taille de chaque mission, en mètres.',
+  'ctx.initiales': 'Tâches déjà comptées comme terminées au départ. En général 0.',
+  'ctx.remuneration': 'Somme versée par tâche, seulement si la boutique est active.',
+  'ctx.vehicules': 'Nombre de véhicules achetables au garage virtuel.',
+  'ctx.renforts': 'Appels de renfort allié. Chaque appel envoie un groupe de 8 soldats.',
+  'ctx.camp': 'Camp des renforts alliés. En général BLUFOR.',
+  'ctx.trafic': 'Véhicules civils qui circulent sur les routes, et habitants dans les villes et villages. Tout sort du registre du serveur : aucun mod en plus.',
+  'ctx.civTrafic': 'Nombre de véhicules civils entretenus autour des joueurs, pas sur toute la carte. 0 : aucune circulation. Le chiffre monte tout seul quand un joueur entre en ville.',
+  'ctx.civHabitants': 'Civils ajoutés dans chaque agglomération, en plus de ceux déduits du nombre de maisons. -1 : la moitié du trafic.',
+  'ctx.civRayon': 'Autour de chaque joueur : la distance dans laquelle on cherche des maisons à peupler et où l’on gare des voitures vides.',
+  'ctx.civPortee': 'Distance maximale d’apparition des véhicules civils. Plus court = plus dense autour des joueurs.',
+  'ctx.civOubli': 'Au-delà de cette distance du joueur le plus proche, un civil d’ambiance est supprimé. C’est ce qui économise les ressources du serveur.',
+  'param.base': 'Nom du marqueur posé sur ta base dans l’éditeur.',
+  'param.arsenaux': 'Objets de l’éditeur, séparés par des virgules.',
+};
+const LOC_SHORT = { NameVillage: 'Villages', NameCity: 'Villes', NameLocal: 'Lieux particuliers', Name: 'Lieux communs', Strategic: 'Bases' };
+const shortOf = (scope, f) => SHORT[scope + '.' + f.k] || SHORT[f.k] || f.l;
+const tipOf = (scope, f) => TIPS[scope + '.' + f.k] || TIPS[f.k] || '';
+
+/* ---------- un champ ---------- */
+function field(prefix, scope, f, vals, owner, grp) {
+  const id = prefix + '-' + f.k;
+  const text = shortOf(scope, f);
+  const tip = tipOf(scope, f);
+  const err = h('p', { class: 'err', id: 'm-' + id, hidden: true, role: 'alert' });
+  const lab = (forId) => h('div', { class: 'lab' }, forId ? h('label', { for: forId, text }) : h('span', { class: 'lab-t', text }), tip ? tipButton(tip) : null);
+  const touch = () => refresh();
+  let control;
+  let node;
+
+  if (f.t === 'bool') {
+    control = h('input', { type: 'checkbox', id, role: 'switch', checked: !!vals[f.k] });
+    control.addEventListener('change', () => { vals[f.k] = control.checked; touch(); });
+    node = h('div', { class: 'f f-sw' },
+      h('label', { class: 'sw', for: id }, control, h('span', { class: 'knob', 'aria-hidden': 'true' }), h('span', { text })),
+      tip ? tipButton(tip) : null, err);
+  } else if (f.t === 'locs') {
+    control = h('div', { class: 'chips', id, role: 'group', 'aria-label': text });
+    LOCS.forEach(([val]) => {
+      const cb = h('input', { type: 'checkbox', id: id + '-' + val, checked: (vals[f.k] || []).includes(val) });
+      cb.addEventListener('change', () => {
+        const set = new Set(vals[f.k] || []);
+        if (cb.checked) set.add(val); else set.delete(val);
+        vals[f.k] = LOCS.map((l) => l[0]).filter((x) => set.has(x));
+        touch();
+      });
+      control.append(h('label', { class: 'chip' }, cb, h('span', { text: LOC_SHORT[val] })));
+    });
+    node = h('div', { class: 'f f-wide' }, lab(null), control, err);
+  } else if (f.t === 'faction' || f.t === 'camp') {
+    const opts = f.t === 'faction'
+      ? FACTIONS.map(([n, name, addon]) => h('option', { value: n, selected: String(vals[f.k]) === String(n) }, n + ' · ' + name + (addon ? ' · mod' : '')))
+      : CAMPS.map(([n, name]) => h('option', { value: n, selected: vals[f.k] === n }, name));
+    control = h('select', { id }, opts);
+    control.addEventListener('change', () => { vals[f.k] = control.value; touch(); });
+    node = h('div', { class: 'f' }, lab(id), control, err);
+  } else {
+    const isNum = f.t === 'int';
+    control = h('input', {
+      id,
+      type: isNum ? 'number' : 'text',
+      inputmode: isNum ? 'numeric' : false,
+      min: isNum && f.min != null ? f.min : false,
+      step: isNum ? 1 : false,
+      autocomplete: 'off',
+      spellcheck: 'false',
+      placeholder: f.t === 'pos' ? 'x, y' : f.t === 'idents' ? 'nom_1, nom_2' : false,
+    });
+    control.value = vals[f.k] == null ? '' : vals[f.k];
+    control.addEventListener('input', () => { vals[f.k] = control.value; touch(); });
+    node = h('div', { class: 'f' + (f.t === 'text' || f.t === 'idents' ? ' f-wide' : '') }, lab(id), control, err);
+  }
+  reg[id] = { control, def: f, errEl: err, vals, owner, grp };
+  return node;
+}
+
+function purge(grp) { Object.keys(reg).filter((k) => reg[k].grp === grp).forEach((k) => delete reg[k]); }
+function fieldsInto(box, prefix, scope, fields, vals, owner, grp) {
+  purge(grp);
+  box.textContent = '';
+  fields.forEach((f) => box.append(field(prefix, scope, f, vals, owner, grp)));
+}
+function renderCtx() { fieldsInto($('ctx'), 'c', 'ctx', CONTEXT_FIELDS, state.ctx, null, 'ctx'); }
+
+/* ---------- registre du serveur ---------- */
+function renderReg() {
+  const forget = $('regForget');
+  if (REGISTRE) {
+    $('regSum').textContent = FACTIONS.length + ' factions · ' + REGISTRE.carte;
+    $('regNote').textContent = 'Registre de ' + REGISTRE.carte
+      + (REGISTRE.date ? ', relevé le ' + REGISTRE.date : '')
+      + (REGISTRE.mods.length ? ' (' + REGISTRE.mods.join(', ') + ')' : '')
+      + '. Les champs « faction » émettent l’id exact : la mission reste jouable sur un serveur sans ces mods, le script retombant sur une faction du même camp.';
+    forget.hidden = false;
+  } else {
+    $('regSum').textContent = 'factions par défaut';
+    $('regNote').textContent = 'Les champs « faction » proposent les 8 index d’origine. En jeu : molette → « Copier le registre des factions », puis colle le résultat ici pour avoir la liste réelle du serveur.';
+    forget.hidden = true;
+  }
+}
+function redrawAll() {
+  renderCtx();
+  renderParams();
+  renderPublic();
+  renderSteps();
+  refresh();
+}
+function importReg() {
+  const st = $('regStatus');
+  const t = $('regBox').value;
+  if (!t.trim()) { st.textContent = 'Colle d’abord le registre.'; st.className = 'note bad'; return; }
+  const r = readRegistre(t);
+  if (!r.ok) { st.textContent = r.msg; st.className = 'note bad'; return; }
+  /* Les étapes déjà saisies gardent leur sens : leurs index passent en
+     ids, sinon la liste déroulante retomberait sur la première entrée. */
+  const migre = (vals) => {
+    if (vals && /^[0-9]+$/.test(String(vals.faction == null ? '' : vals.faction))) {
+      vals.faction = String(factionFromLegacy(parseInt(vals.faction, 10)));
+    }
+  };
+  state.steps.forEach((s) => migre(s.v));
+  if (state.pub) migre(state.pub.v);
+  st.textContent = '';
+  st.className = 'note';
+  $('regBox').value = '';
+  renderReg();
+  redrawAll();
+  toast(r.n + ' factions importées · ' + r.carte);
+}
+function doForgetReg() {
+  forgetRegistre();
+  renderReg();
+  redrawAll();
+  toast('Factions par défaut rétablies');
+}
+function renderParams() { fieldsInto($('params'), 'p', 'param', PARAM_FIELDS, state.params, null, 'param'); }
+
+/* ---------- mission publique : un seul formulaire ---------- */
+function renderPublic() {
+  purge('pub');
+  const box = $('pubFields');
+  const wrap = $('pubMore');
+  box.textContent = '';
+  wrap.textContent = '';
+  const pre = 's' + state.pub.id;
+  STEPS.auto.fields.filter((f) => !f.adv).forEach((f) => box.append(field(pre, 'auto', f, state.pub.v, state.pub, 'pub')));
+  const g2 = h('div', { class: 'fields' });
+  STEPS.auto.fields.filter((f) => f.adv).forEach((f) => g2.append(field(pre, 'auto', f, state.pub.v, state.pub, 'pub')));
+  const acc2 = h('div', { class: 'acc', id: 'pubAd' }, h('div', { class: 'acc-in', inert: true }, g2));
+  const more = h('button', { type: 'button', class: 'more-h', 'aria-expanded': 'false' }, 'Plus d’options', h('span', { class: 'chev', 'aria-hidden': 'true' }));
+  more.addEventListener('click', () => {
+    const open = more.getAttribute('aria-expanded') !== 'true';
+    more.setAttribute('aria-expanded', String(open));
+    setAcc(acc2, open);
+  });
+  wrap.append(more, acc2);
+}
+
+/* Ouvre les zones repliées qui contiennent un champ, puis y place le curseur */
+function reveal(el) {
+  for (let n = el; n && n !== document.body; n = n.parentElement) {
+    if (!(n.classList && n.classList.contains('acc')) || n.classList.contains('open')) continue;
+    setAcc(n, true);
+    if (n.id.startsWith('sb-')) {
+      const id = n.id.slice(3);
+      const s = state.steps.find((x) => String(x.id) === id);
+      if (s) s.open = true;
+      $('step-' + id).classList.add('open');
+      $('st-' + id).setAttribute('aria-expanded', 'true');
+    } else if (n.id === 'ctxAcc') $('ctxH').setAttribute('aria-expanded', 'true');
+    else if (n.id === 'parAcc') $('parH').setAttribute('aria-expanded', 'true');
+    else if (n.previousElementSibling && n.previousElementSibling.hasAttribute('aria-expanded')) n.previousElementSibling.setAttribute('aria-expanded', 'true');
+  }
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  setTimeout(() => { if (el.focus) el.focus({ preventScroll: true }); }, 280);
+}
+
+/* ---------- scénario privé : la liste d'étapes ---------- */
+function waitBlock(s) {
+  const id = 'w' + s.id;
+  const on = h('input', { type: 'checkbox', id: id + '-on', role: 'switch' });
+  const num = h('input', { type: 'number', id: id + '-n', min: '1', step: '1', inputmode: 'numeric', 'aria-label': 'Nombre de tâches terminées' });
+  const auto = h('button', { type: 'button', class: 'link', id: id + '-auto', text: 'Auto' });
+  const err = h('p', { class: 'err', id: 'm-s' + s.id + '-waitN', hidden: true, role: 'alert' });
+  on.addEventListener('change', () => { s.wait = on.checked; refresh(); });
+  num.addEventListener('input', () => { s.waitN = num.value; refresh(); });
+  auto.addEventListener('click', () => { s.waitN = null; refresh(); });
+  reg['s' + s.id + '-waitN'] = { control: num, def: { k: 'waitN', t: 'int' }, errEl: err, vals: s, owner: null, grp: 'steps' };
+  return h('div', { class: 'wait' },
+    h('div', { class: 'f-sw' },
+      h('label', { class: 'sw', for: id + '-on' }, on, h('span', { class: 'knob', 'aria-hidden': 'true' }), h('span', { text: 'Attendre la fin de cette tâche' })),
+      tipButton('La suite ne démarre qu’une fois cette tâche terminée. Décoché : la suite démarre en même temps.')),
+    h('div', { class: 'wait-n', id: id + '-row' }, 'Jusqu’à', num, 'tâche(s) terminée(s)', auto),
+    h('p', { class: 'hint-last', id: id + '-last', hidden: true, text: 'Dernière étape : rien ne suit.' }),
+    err);
+}
+
+function stepNode(s, i, count) {
+  const def = STEPS[s.type];
+  const move = (d) => () => {
+    const j = i + d;
+    if (j < 0 || j >= count) return;
+    [state.steps[i], state.steps[j]] = [state.steps[j], state.steps[i]];
+    renderSteps();
+    refresh();
+  };
+  const toggle = h('button', { type: 'button', class: 'step-toggle', id: 'st-' + s.id, 'aria-expanded': String(!!s.open), 'aria-controls': 'sb-' + s.id },
+    h('span', { class: 'num', 'aria-hidden': 'true', text: String(i + 1) }),
+    h('span', { class: 'ttl' }, h('strong', { text: def.label }), h('span', { class: 'sum', id: 'sum-' + s.id })));
+  toggle.addEventListener('click', () => {
+    s.open = !s.open;
+    toggle.setAttribute('aria-expanded', String(s.open));
+    $('step-' + s.id).classList.toggle('open', s.open);
+    setAcc($('sb-' + s.id), s.open);
+    saveState();
+  });
+  const head = h('div', { class: 'step-head' }, toggle,
+    h('div', { class: 'tools' },
+      def.help ? tipButton(def.help) : null,
+      h('button', { type: 'button', class: 'ico', 'aria-label': 'Monter', text: '↑', disabled: i === 0, onclick: move(-1) }),
+      h('button', { type: 'button', class: 'ico', 'aria-label': 'Descendre', text: '↓', disabled: i === count - 1, onclick: move(1) }),
+      h('button', { type: 'button', class: 'ico del', 'aria-label': 'Supprimer', text: '×', onclick: () => { state.steps.splice(i, 1); renderSteps(); refresh(); } })));
+
+  const main = h('div', { class: 'fields' });
+  def.fields.filter((f) => !f.adv).forEach((f) => main.append(field('s' + s.id, s.type, f, s.v, s, 'steps')));
+  const body = h('div', { class: 'step-body' }, main);
+  const advFields = def.fields.filter((f) => f.adv);
+  if (advFields.length) {
+    const g2 = h('div', { class: 'fields' });
+    advFields.forEach((f) => g2.append(field('s' + s.id, s.type, f, s.v, s, 'steps')));
+    const acc2 = h('div', { class: 'acc', id: 'ad-' + s.id }, h('div', { class: 'acc-in', inert: true }, g2));
+    const more = h('button', { type: 'button', class: 'more-h', 'aria-expanded': 'false' }, 'Plus d’options', h('span', { class: 'chev', 'aria-hidden': 'true' }));
+    more.addEventListener('click', () => {
+      const open = more.getAttribute('aria-expanded') !== 'true';
+      more.setAttribute('aria-expanded', String(open));
+      setAcc(acc2, open);
+    });
+    body.append(h('div', { class: 'more' }, more, acc2));
+  }
+  if (def.task) body.append(waitBlock(s));
+  const acc = h('div', { class: 'acc' + (s.open ? ' open' : ''), id: 'sb-' + s.id }, h('div', { class: 'acc-in', inert: !s.open }, body));
+  return h('li', { class: 'step' + (s.open ? ' open' : ''), id: 'step-' + s.id }, head, acc);
+}
+
+function renderSteps() {
+  const ol = $('steps');
+  ol.textContent = '';
+  purge('steps');
+  if (!state.steps.length) {
+    ol.append(h('li', { class: 'empty', text: 'Aucune étape. Décris ta mission ou ajoute une étape.' }));
+    return;
+  }
+  const count = state.steps.length;
+  state.steps.forEach((s, i) => {
+    ol.append(stepNode(s, i, count));
+    if (STEPS[s.type].task && i < count - 1) ol.append(h('li', { class: 'joint', id: 'wl-' + s.id, hidden: true }, h('span', { id: 'wlt-' + s.id })));
+  });
+}
+
+/* ---------- le menu « Ajouter » ---------- */
+function addStep(key) {
+  const st = newStep(state, key);
+  state.steps.push(st);
+  closeMenu();
+  renderSteps();
+  refresh();
+  const card = $('step-' + st.id);
+  if (card) {
+    card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const first = card.querySelector('.step-body input, .step-body select');
+    if (first) first.focus({ preventScroll: true });
+  }
+}
+function renderMenu() {
+  const m = $('addMenu');
+  m.textContent = '';
+  STEP_GROUPS.forEach((g) => {
+    m.append(h('p', { class: 'menu-t', text: g }));
+    Object.entries(STEPS).filter(([, d]) => d.group === g).forEach(([key, d]) => {
+      m.append(h('button', { type: 'button', class: 'menu-i', text: d.label, onclick: () => addStep(key) }));
+    });
+  });
+}
+function openMenu() { $('addMenu').hidden = false; $('addBtn').setAttribute('aria-expanded', 'true'); const f = $('addMenu').querySelector('.menu-i'); if (f) f.focus({ preventScroll: true }); }
+function closeMenu() { $('addMenu').hidden = true; $('addBtn').setAttribute('aria-expanded', 'false'); }
+
+/* ---------- coloration du code ---------- */
+function highlight(code) {
+  const re = /(\/\/.*$)|("(?:[^"]|"")*")|(\bfnc_\w+)|(\b(?:true|false|spawn|call|waituntil|sleep|west|east|independent)\b)|(-?\b\d+(?:\.\d+)?\b)/gm;
+  return esc(code).replace(re, (m, c, s, f, k, n) => {
+    if (c) return '<span class="tk-c">' + c + '</span>';
+    if (s) return '<span class="tk-s">' + s + '</span>';
+    if (f) return '<span class="tk-f">' + f + '</span>';
+    if (k) return '<span class="tk-k">' + k + '</span>';
+    return '<span class="tk-n">' + n + '</span>';
+  });
+}
+
+/* ---------- « en clair » ---------- */
+function fillClair(box, briefEl, ctxEl, d) {
+  box.textContent = '';
+  briefEl.textContent = d.brief || '';
+  ctxEl.textContent = d.ctx;
+  if (d.empty) {
+    box.append(h('p', { class: 'd-empty', text: 'Ta mission est vide. Ajoute une étape pour la voir ici.' }));
+    return;
+  }
+  const ol = h('ol', { class: 'd-steps' });
+  d.items.forEach((it) => {
+    ol.append(h('li', {}, h('strong', { text: it.title }), it.text, it.wait ? h('span', { class: 'd-wait', text: '↓ ' + it.wait }) : null));
+  });
+  box.append(ol);
+  if (d.editor && d.editor.length) {
+    box.append(h('div', { class: 'd-objs' }, 'À créer dans l’éditeur', h('div', { class: 'tags' }, d.editor.map((n) => h('code', { text: n })))));
+  }
+}
+function waitText(n) {
+  return n === 1 ? 'Attend qu’une tâche soit terminée' : 'Attend que ' + n + ' tâches soient terminées';
+}
+
+/* ---------- mise à jour de toute la page ---------- */
+function labelOf(issue) {
+  if (issue.k === 'waitN') return 'Attente';
+  let defs = null;
+  let scope = '';
+  if (issue.scope === 'ctx') { defs = CONTEXT_FIELDS; scope = 'ctx'; }
+  else if (issue.scope === 'param') { defs = PARAM_FIELDS; scope = 'param'; }
+  else if (issue.scope === 'step') {
+    const st = activeSteps().find((x) => x.id === issue.id);
+    if (st) { defs = STEPS[st.type].fields; scope = st.type; }
+  }
+  const f = defs && defs.find((d) => d.k === issue.k);
+  return f ? shortOf(scope, f) : '';
+}
+
+function refresh() {
+  const vs = viewState();
+  const sc = generate(vs);
+  const pa = generateParams(state.params);
+  lastCode = { scenario: sc.code, params: pa.code };
+  lastIssues = sc.issues.concat(pa.issues);
+  lastMeta = sc.meta;
+
+  $('code-scenario').innerHTML = highlight(sc.code);
+  $('code-params').innerHTML = highlight(pa.code);
+  fillClair($('desc'), $('brief'), $('clairCtx'), describe(vs));
+
+  // champs : remise à zéro, désactivés, puis erreurs
+  Object.values(reg).forEach((r) => {
+    r.errEl.hidden = true;
+    r.errEl.textContent = '';
+    r.control.classList.remove('invalid');
+    r.control.removeAttribute('aria-invalid');
+    const sd = r.owner ? STEPS[r.owner.type] : null;
+    const off = !!(sd && sd.off && sd.off[r.def.k] && sd.off[r.def.k](r.vals));
+    if (r.def.t !== 'locs') r.control.disabled = off;
+  });
+  lastIssues.forEach((it) => {
+    const prefix = it.scope === 'ctx' ? 'c' : it.scope === 'param' ? 'p' : 's' + it.id;
+    const r = reg[prefix + '-' + it.k];
+    if (!r) return;
+    r.control.classList.add('invalid');
+    r.control.setAttribute('aria-invalid', 'true');
+    r.errEl.textContent = it.msg;
+    r.errEl.hidden = false;
+  });
+
+  // étapes : résumé, pastille, attente
+  state.steps.forEach((s) => {
+    const def = STEPS[s.type];
+    const sum = $('sum-' + s.id);
+    if (sum) { let t = ''; try { t = def.sum(s.v); } catch (e) { t = ''; } sum.textContent = t; }
+    const tg = $('st-' + s.id);
+    if (tg) tg.classList.toggle('bad', lastIssues.some((it) => it.scope === 'step' && it.id === s.id));
+    if (!def.task) return;
+    const m = lastMeta[s.id] || { autoN: 1, last: true };
+    const on = $('w' + s.id + '-on');
+    const row = $('w' + s.id + '-row');
+    const num = $('w' + s.id + '-n');
+    const auto = $('w' + s.id + '-auto');
+    const last = $('w' + s.id + '-last');
+    const joint = $('wl-' + s.id);
+    if (on) on.checked = !!s.wait;
+    if (row) row.hidden = !s.wait || m.last;
+    if (num && document.activeElement !== num) num.value = s.waitN == null ? String(m.autoN) : String(s.waitN);
+    if (auto) auto.hidden = s.waitN == null;
+    if (last) last.hidden = !(s.wait && m.last);
+    if (joint) {
+      const show = !!s.wait && !m.last;
+      joint.hidden = !show;
+      $('wlt-' + s.id).textContent = show ? waitText(m.waitN || m.autoN) : '';
+    }
+  });
+  // réglages : résumé
+  const c = state.ctx;
+  $('ctxSum').textContent = (parseInt(c.renforts, 10) || 0) + ' renforts · ' + (c.trafic ? 'vie civile' : 'sans civils');
+
+  // pastille d'état et liste des points
+  const mine = lastIssues.filter((it) => (state.tab === 'params' ? it.scope === 'param' : it.scope !== 'param'));
+  const errors = mine.filter((it) => it.level === 'error').length;
+  const pill = $('pill');
+  const ul = $('issues');
+  ul.textContent = '';
+  mine.forEach((it) => {
+    const where = it.scope === 'step' ? (state.mode === 'prive' ? 'Étape ' + it.n : 'Missions') : it.scope === 'ctx' ? 'Réglages' : it.scope === 'param' ? 'Joueurs' : 'Mission';
+    const lab = labelOf(it);
+    const r = reg[(it.scope === 'ctx' ? 'c' : it.scope === 'param' ? 'p' : 's' + it.id) + '-' + it.k];
+    const text = where + (lab ? ' · ' + lab : '') + ' : ' + it.msg;
+    ul.append(h('li', {}, r ? h('button', { type: 'button', class: 'issue', text, onclick: () => reveal(r.control) }) : text));
+  });
+  ul.classList.toggle('warn', !errors);
+  if (!mine.length) {
+    pill.textContent = 'Prêt à copier';
+    pill.className = 'pill';
+    ul.hidden = true;
+    pill.setAttribute('aria-expanded', 'false');
+  } else {
+    pill.textContent = errors ? errors + ' à corriger' : 'À vérifier';
+    pill.className = 'pill ' + (errors ? 'bad' : 'warn');
+  }
+  pill.disabled = !mine.length;
+  saveState();
+}
+
+/* ---------- mode et onglets ---------- */
+function setMode(mode, quiet) {
+  state.mode = mode;
+  $('seg').dataset.mode = mode;
+  $('modePublic').setAttribute('aria-selected', String(mode === 'public'));
+  $('modePrive').setAttribute('aria-selected', String(mode === 'prive'));
+  $('panePublic').hidden = mode !== 'public';
+  $('paneDescribe').hidden = mode !== 'prive';
+  $('paneSteps').hidden = mode !== 'prive';
+  if (!quiet) { $('aiPreview').hidden = true; refresh(); }
+}
+function setTab(t) {
+  state.tab = t;
+  [['clair', 'tabClair', 'paneClair'], ['code', 'tabCode', 'paneCode'], ['params', 'tabParams', 'paneParamsOut']].forEach(([k, tab, pane]) => {
+    $(tab).setAttribute('aria-selected', String(k === t));
+    $(pane).hidden = k !== t;
+  });
+  $('outFile').textContent = t === 'params' ? 'mes-parametres.sqf' : 'init-scenario.sqf';
+  const label = t === 'params' ? 'Copier les lignes' : 'Copier le code';
+  $('copy').textContent = label;
+  $('copyBar').textContent = label;
+  $('issues').hidden = true;
+  refresh();
+}
+
+/* ---------- copie ---------- */
+async function copyCode() {
+  const text = state.tab === 'params' ? lastCode.params : lastCode.scenario;
+  const errors = lastIssues.filter((it) => it.level === 'error' && (state.tab === 'params' ? it.scope === 'param' : it.scope !== 'param')).length;
+  const done = () => toast(errors ? 'Copié, mais ' + errors + ' point' + (errors > 1 ? 's' : '') + ' à corriger' : 'Copié');
+  try {
+    await navigator.clipboard.writeText(text);
+    done();
+  } catch (e) {
+    const node = state.tab === 'params' ? $('code-params') : $('code-scenario');
+    if (state.tab === 'clair') setTab('code');
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    if (ok) done(); else toast('Sélectionné : fais Ctrl+C');
+  }
+}
+
+/* ---------- décrire la mission ---------- */
+function aiStatus(msg, bad) {
+  const s = $('aiStatus');
+  s.textContent = msg;
+  s.className = 'note' + (bad ? ' bad' : '');
+}
+function aiDescription() {
+  const text = $('aiText').value.trim();
+  if (!text) {
+    aiStatus('Écris d’abord ta mission.', true);
+    $('aiText').focus();
+    return null;
+  }
+  aiStatus('', false);
+  return text;
+}
+function localCreate() {
+  const text = aiDescription();
+  if (!text) return;
+  aiResult = interpretText(text);
+  renderPreview(aiResult);
+}
+function toggleAi(open) {
+  const want = open == null ? $('aiToggle').getAttribute('aria-expanded') !== 'true' : open;
+  $('aiToggle').setAttribute('aria-expanded', String(want));
+  setAcc($('aiAcc'), want);
+}
+async function copyPrompt() {
+  const text = aiDescription();
+  if (!text) return;
+  const box = $('aiPromptBox');
+  box.value = buildPrompt(text);
+  try {
+    await navigator.clipboard.writeText(box.value);
+    toast('Prompt copié');
+  } catch (e) {
+    box.hidden = false;
+    box.focus();
+    box.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    toast(ok ? 'Prompt copié' : 'Sélectionné : fais Ctrl+C');
+  }
+}
+function viewPrompt() {
+  const text = aiDescription();
+  if (!text) return;
+  const box = $('aiPromptBox');
+  box.value = buildPrompt(text);
+  box.hidden = !box.hidden;
+}
+function readAnswer() {
+  const t = $('aiAnswer').value;
+  if (!t.trim()) { aiStatus('Colle d’abord la réponse de l’IA.', true); $('aiAnswer').focus(); return; }
+  aiStatus('', false);
+  handleImport(t);
+}
+function handleImport(input) {
+  aiResult = readImport(input);
+  renderPreview(aiResult);
+}
+function renderPreview(res) {
+  const box = $('aiPreview');
+  box.textContent = '';
+  box.hidden = false;
+  const list = (items, cls) => (items.length ? h('ul', { class: cls }, items.map((t) => h('li', { text: t }))) : null);
+  const close = () => { box.hidden = true; aiResult = null; };
+  if (!res.ok) {
+    box.append(...[
+      h('h3', { text: 'Je n’ai pas pu lire ce texte' }),
+      list(res.errors, 'pv-list bad'),
+      h('p', { class: 'note', text: res.local ? 'Essaie des phrases plus courtes, ou passe par une IA.' : 'Colle la réponse complète de l’IA, accolades comprises.' }),
+      h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: 'Fermer', onclick: close })),
+    ].filter(Boolean));
+    return;
+  }
+  const tmp = { ctx: Object.assign(defaultState().ctx, res.ctx), steps: res.steps, params: defaultState().params, nextId: 9999 };
+  const missing = generate(tmp).issues.filter((i) => i.level === 'error').length;
+  const pvBox = h('div', { class: 'd-wrap' });
+  const pvBrief = h('p', { class: 'clair-sub' });
+  const pvCtx = h('p', { class: 'clair-ctx' });
+  fillClair(pvBox, pvBrief, pvCtx, describe(tmp));
+  const all = res.errors.concat(res.warnings);
+  const hasSteps = state.steps.length > 0;
+  box.append(...[
+    h('h3', { text: 'Ce que j’ai compris' }),
+    pvBrief,
+    pvBox,
+    res.notes.length ? list(res.notes, 'pv-notes') : null,
+    missing ? h('p', { class: 'pv-miss', text: missing + ' valeur' + (missing > 1 ? 's' : '') + ' à renseigner ensuite (en rouge).' }) : null,
+    all.length ? h('details', {}, h('summary', { text: all.length + ' point' + (all.length > 1 ? 's' : '') + ' d’attention' }), list(all, 'pv-list')) : null,
+    h('div', { class: 'row' },
+      h('button', { type: 'button', class: 'btn btn-sm', text: hasSteps ? 'Remplacer mes étapes' : 'Utiliser', onclick: () => applyImport('replace') }),
+      hasSteps ? h('button', { type: 'button', class: 'btn btn-soft btn-sm', text: 'Ajouter à la suite', onclick: () => applyImport('append') }) : null,
+      h('button', { type: 'button', class: 'btn btn-ghost btn-sm', text: 'Annuler', onclick: close })),
+  ].filter(Boolean));
+  box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function applyImport(mode) {
+  const res = aiResult;
+  if (!res || !res.ok) return;
+  if (mode === 'replace') {
+    state.steps = [];
+    Object.assign(state.ctx, res.ctx);
+  }
+  res.steps.forEach((st) => { st.id = state.nextId++; state.steps.push(st); });
+  aiResult = null;
+  $('aiPreview').hidden = true;
+  renderCtx();
+  renderSteps();
+  refresh();
+  const left = lastIssues.filter((i) => i.level === 'error').length;
+  toast(res.steps.length + ' étape' + (res.steps.length > 1 ? 's' : '') + (left ? ' · ' + left + ' à renseigner' : ''));
+  $('paneSteps').scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+
+/* Bouton « Générer avec Claude » : visible seulement pour le propriétaire de la page */
+async function detectOwnerClaude() {
+  try {
+    const c = window.claude;
+    if (!c || typeof c.use !== 'function') return;
+    const [s, u] = await Promise.all([c.use('sample'), c.use('user')]);
+    if (typeof s === 'function' && u && typeof u.isOwner === 'function' && u.isOwner()) {
+      sampleFn = s;
+      $('aiClaude').hidden = false;
+    }
+  } catch (e) { /* la page marche très bien sans */ }
+}
+async function askClaude() {
+  const text = aiDescription();
+  if (!text || !sampleFn) return;
+  const ctl = new AbortController();
+  aiCtl = ctl;
+  $('aiClaude').disabled = true;
+  $('aiCancel').hidden = false;
+  aiStatus('Claude réfléchit…', false);
+  try {
+    const data = await sampleFn.json(buildPrompt(text), { signal: ctl.signal, modelTier: 'default' });
+    aiStatus('', false);
+    handleImport(data);
+  } catch (e) {
+    const code = e && e.code;
+    const msgs = {
+      rate_limited: 'Limite d’utilisation atteinte : réessaie plus tard.',
+      session_expired: 'Reconnecte-toi à Claude, puis réessaie.',
+      invalid_json: 'Réponse illisible : réessaie.',
+      refused: 'Claude n’a pas pu traiter ce texte : reformule-le.',
+      empty_completion: 'Pas de réponse : reformule le texte.',
+      prompt_too_large: 'Le texte est trop long.',
+    };
+    if (code === 'cancelled') {
+      aiStatus('', false);
+    } else if (['not_granted', 'sampling_disabled', 'capability_disabled', 'capability_removed', 'not_declared'].includes(code)) {
+      $('aiClaude').hidden = true;
+      aiStatus('Claude n’est pas disponible ici.', true);
+    } else {
+      aiStatus(msgs[code] || 'Erreur de connexion : réessaie.', true);
+    }
+  } finally {
+    $('aiClaude').disabled = false;
+    $('aiCancel').hidden = true;
+    aiCtl = null;
+  }
+}
+
+/* ---------- branchements ---------- */
+function bindAll() {
+  $('modePublic').addEventListener('click', () => setMode('public'));
+  $('modePrive').addEventListener('click', () => setMode('prive'));
+  $('tabClair').addEventListener('click', () => setTab('clair'));
+  $('tabCode').addEventListener('click', () => setTab('code'));
+  $('tabParams').addEventListener('click', () => setTab('params'));
+  $('copy').addEventListener('click', copyCode);
+  $('copyBar').addEventListener('click', copyCode);
+  $('pill').addEventListener('click', () => {
+    const open = $('issues').hidden;
+    $('issues').hidden = !open;
+    $('pill').setAttribute('aria-expanded', String(open));
+  });
+  $('ctxH').addEventListener('click', () => { const o = $('ctxH').getAttribute('aria-expanded') !== 'true'; $('ctxH').setAttribute('aria-expanded', String(o)); setAcc($('ctxAcc'), o); });
+  $('parH').addEventListener('click', () => { const o = $('parH').getAttribute('aria-expanded') !== 'true'; $('parH').setAttribute('aria-expanded', String(o)); setAcc($('parAcc'), o); });
+  $('regH').addEventListener('click', () => { const o = $('regH').getAttribute('aria-expanded') !== 'true'; $('regH').setAttribute('aria-expanded', String(o)); setAcc($('regAcc'), o); });
+  $('regImport').addEventListener('click', importReg);
+  $('regForget').addEventListener('click', doForgetReg);
+  $('aiLocal').addEventListener('click', localCreate);
+  $('aiToggle').addEventListener('click', () => toggleAi());
+  $('aiCopyPrompt').addEventListener('click', copyPrompt);
+  $('aiViewPrompt').addEventListener('click', viewPrompt);
+  $('aiRead').addEventListener('click', readAnswer);
+  $('aiClaude').addEventListener('click', askClaude);
+  $('aiCancel').addEventListener('click', () => { if (aiCtl) aiCtl.abort(); });
+  $('addBtn').addEventListener('click', (e) => { e.stopPropagation(); if ($('addMenu').hidden) openMenu(); else closeMenu(); });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.tip')) hideTip();
+    if (!e.target.closest('.addwrap')) closeMenu();
+    const b = e.target.closest && e.target.closest('.tip');
+    if (b) { e.preventDefault(); showTip(b); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { hideTip(); if (!$('addMenu').hidden) { closeMenu(); $('addBtn').focus(); } }
+  });
+}
+
+/* ---------- démarrage ---------- */
+renderMenu();
+renderCtx();
+renderParams();
+renderPublic();
+renderSteps();
+renderReg();
+setAcc($('ctxAcc'), false);
+setAcc($('parAcc'), false);
+setAcc($('regAcc'), false);
+setAcc($('aiAcc'), false);
+bindAll();
+setMode(state.mode, true);
+setTab(state.tab);
+detectOwnerClaude();
+
+/* ====== Parcours en trois temps, et exemples cliquables ======
+   Le reproche etait juste : la page posait un textarea et quatre boutons
+   de meme poids, et personne ne voyait qu'il fallait ECRIRE puis CLIQUER.
+   Les trois pastilles du haut disent l'ordre et suivent l'etat reel de la
+   page — elles ne sont pas un decor, elles se deduisent du nombre
+   d'etapes et de la pastille de resultat. */
+(() => {
+  const F = (n) => document.getElementById('flow' + n);
+  const seg = document.getElementById('seg');
+  const steps = document.getElementById('steps');
+  const pill = document.getElementById('pill');
+  const t1 = document.getElementById('flow1t');
+  const s1 = document.getElementById('flow1s');
+  const f2 = F(2);
+  const t2 = f2 ? f2.querySelector('strong') : null;
+  const s2 = f2 ? f2.querySelector('em') : null;
+
+  const mark = (n, etat) => {
+    const el = F(n);
+    if (!el) return;
+    el.classList.toggle('on', etat === 'on');
+    el.classList.toggle('done', etat === 'done');
+  };
+
+  const setFlow = () => {
+    const prive = !!seg && seg.dataset.mode === 'prive';
+    // renderIssues ecrit exactement 'pill' quand tout est pret, et
+    // 'pill bad' / 'pill warn' sinon.
+    const pret = !!pill && pill.className.trim() === 'pill';
+    const aDesEtapes = !!(steps && steps.querySelector('.step'));
+
+    if (t1) t1.textContent = prive ? 'Ecris ta mission' : 'Regle les parametres';
+    if (s1) s1.textContent = prive ? 'une ou deux phrases suffisent' : 'taille, faction, difficulte';
+    if (t2) t2.textContent = prive ? 'Verifie les etapes' : 'Relis le resume';
+    if (s2) s2.textContent = prive ? 'coordonnees, factions, nombres' : 'onglet " En clair ", a droite';
+
+    if (prive && !aDesEtapes) { mark(1, 'on'); mark(2, ''); mark(3, ''); return; }
+    if (pret) { mark(1, 'done'); mark(2, 'done'); mark(3, 'on'); return; }
+    mark(1, 'done'); mark(2, 'on'); mark(3, '');
+  };
+
+  if (steps) new MutationObserver(setFlow).observe(steps, { childList: true });
+  if (pill) new MutationObserver(setFlow).observe(pill, { childList: true, attributes: true, attributeFilter: ['class'] });
+  if (seg) new MutationObserver(setFlow).observe(seg, { attributes: true, attributeFilter: ['data-mode'] });
+
+  document.querySelectorAll('.ex-b').forEach((b) => {
+    b.addEventListener('click', () => {
+      const ta = document.getElementById('aiText');
+      if (!ta) return;
+      ta.value = b.dataset.ex || '';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+      ta.focus();
+      try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) { /* sans importance */ }
+    });
+  });
+
+  setFlow();
+})();
+</script>
+
+</body></html>

@@ -3,22 +3,27 @@
  * C'est le fichier prévu pour être édité : tout le reste du dossier
  * Engima est du code tiers qu'on ne touche pas.
  *
+ * ── Qui décide ici ──
+ * Personne, ou presque. Engima n'est pas exposé au scénario : il est
+ * piloté par fnc_hds_vie_civile, qui pose hds_vie_densite,
+ * hds_vie_portee et hds_vie_plafond à partir des paramètres écrits dans
+ * init-scenario.sqf. Ce fichier ne fait que les relayer.
+ *
+ * Les valeurs de repli entre crochets ne servent que si quelqu'un
+ * démarre le trafic sans passer par fnc_hds_vie_civile : on retombe
+ * alors sur les curseurs CBA, puis sur les réglages d'origine du script
+ * (5 véhicules, 300-500 m).
+ *
  * ── Ce qui a changé par rapport à l'original ──
- * Une seule chose, et par nécessité : la liste de véhicules était
- * hds_liste_vehicule_civil_europeens, une des listes de classnames
- * codées en dur qui ont disparu avec la réécriture. En SQF, une
- * variable indéfinie n'échoue pas sur sa ligne — elle avorte tout le
- * script. Le trafic n'aurait donc pas démarré du tout.
+ * La liste de véhicules était hds_liste_vehicule_civil_europeens, une
+ * des listes de classnames codées en dur qui ont disparu avec la
+ * réécriture. En SQF, une variable indéfinie n'échoue pas sur sa ligne —
+ * elle avorte tout le script. Le trafic n'aurait donc pas démarré du
+ * tout.
  *
  * Elle vient maintenant du registre de factions, qui ne contient que ce
  * que ce serveur a réellement : la liste s'adapte aux mods présents, et
  * ne contient jamais une classe absente.
- *
- * Le nombre de véhicules et les distances sont repris des réglages du
- * menu CBA, avec les valeurs d'origine par défaut (5 véhicules,
- * 300-500 m). Attention : Engima lit ses paramètres UNE FOIS, au
- * démarrage. Changer les curseurs en cours de partie n'agit donc pas
- * sur le trafic, seulement sur les habitants et les voitures garées.
  */
 
 private _classes = [civilian, "LEGER"] call hds_fnc_factionVehicules;
@@ -29,16 +34,25 @@ if (_classes isEqualTo []) exitWith {
     ] call hds_fnc_log;
 };
 
-private _portee = round (missionNamespace getVariable ["hds_civils_portee", 500]);
+// ─── Portée : le scénario, sinon le curseur, sinon l'origine ───
+private _portee = round (missionNamespace getVariable [
+    "hds_vie_portee",
+    missionNamespace getVariable ["hds_civils_portee", 500]
+]);
 if (_portee < 120) then { _portee = 120 };
 
-private _nb = round (missionNamespace getVariable ["hds_civils_densite", 5]);
+private _nb = round (missionNamespace getVariable [
+    "hds_vie_densite",
+    missionNamespace getVariable ["hds_civils_densite", 5]
+]);
 if (_nb < 0) then { _nb = 0 };
 
-// MAX_GROUPS_COUNT est calculé au démarrage à partir de VEHICLES_COUNT.
-// Comme le compte varie maintenant en cours de partie, on lui donne
-// d'emblée la marge haute, sinon il plafonnerait à la valeur de départ.
-private _plafond = 14;
+// MAX_GROUPS_COUNT est calculé une seule fois, au démarrage, à partir de
+// VEHICLES_COUNT. Comme le compte varie ensuite en cours de partie —
+// fnc_hds_vie_civile le monte quand les joueurs entrent en ville — il
+// faut lui donner d'emblée la marge haute, sinon il plafonnerait à la
+// valeur de départ.
+private _plafond = round (missionNamespace getVariable ["hds_vie_plafond", _nb max 14]);
 
 private _parameters = [
     ["SIDE",               civilian],
@@ -73,8 +87,8 @@ private _parameters = [
 ];
 
 ["INFO", "CIVILS", format [
-    "trafic Engima demarre : %1 vehicule(s) vises, anneau %2-%3 m, %4 classe(s) civiles",
-    _nb, round (_portee * 0.6), _portee, count _classes
+    "trafic Engima demarre : %1 vehicule(s) vises (plafond %2), anneau %3-%4 m, %5 classe(s) civiles",
+    _nb, _plafond, round (_portee * 0.6), _portee, count _classes
 ]] call hds_fnc_log;
 
 _parameters spawn ENGIMA_TRAFFIC_StartTraffic;

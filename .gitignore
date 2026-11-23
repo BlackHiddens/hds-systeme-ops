@@ -20,3 +20,14 @@ desktop.ini
 # ─── Mission empaquetée ───
 # Produite par l'éditeur, reconstruite à la demande.
 *.pbo
+
+# ─── La mission de l'éditeur ───
+# mission.sqm appartient à celui qui joue, pas au système : c'est SA
+# carte, ses unités, ses marqueurs. Le principe du projet est que le
+# script s'additionne à la mission sans la remplacer — le suivre dans
+# le dépôt reviendrait à écraser le travail de l'éditeur de chaque
+# utilisateur à la première mise à jour.
+#
+# Conséquence assumée : un clone de ce dépôt n'est pas une mission
+# jouable telle quelle. Il faut y déposer son propre mission.sqm.
+mission.sqm

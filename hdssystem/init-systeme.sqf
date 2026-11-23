@@ -103,15 +103,19 @@ diag_log "[HDS][SYSTEME] Systeme pret";
     };
 // La liste s'est vidée au fur et à mesure : fnc_hds_missions et
 // fnc_hds_presence_hostile dormaient sans nom dans fonctions\fonctions\
-// et sont maintenant assignées, et fnc_engima_traffic a été remplacée
-// par fnc_hds_vie_civile, qui fait le même travail depuis le registre
-// sans ajouter de dépendance.
+// et sont maintenant assignées.
 //
-// fnc_engima_traffic reste ici pour une seule raison : un scénario
-// généré AVANT ce changement contient encore « spawn
-// fnc_engima_traffic ». Si tu recolles un vieux fichier, il tournera
-// quand même, avec une alerte dans le journal plutôt qu'un scénario
-// avorté. Le garder coûte une ligne.
+// fnc_engima_traffic existe bel et bien — c'est le script de trafic
+// d'Engima, compilé par mes-parametres.sqf — mais il n'est PAS exposé
+// au scénario : il est piloté par fnc_hds_vie_civile, qui lui passe ce
+// qu'init-scenario.sqf a demandé. Un scénario ne doit donc jamais
+// l'appeler directement, sous peine d'un trafic qui ignore tous les
+// réglages de la mission.
+//
+// La ligne reste pour une seule raison : si jamais le fichier d'Engima
+// venait à manquer, un vieux scénario qui l'appelle encore recevrait
+// une alerte lisible au lieu d'avorter en entier sur une variable
+// indéfinie. Le garder coûte une ligne.
 } forEach ["fnc_engima_traffic"];
 
 // Le test se fait avec splitString plutôt que regexMatch : c'est la

@@ -15,9 +15,11 @@
 
 // Vie civile : trafic sur les routes et habitants dans les
 // agglomérations, entretenus autour des joueurs et supprimés dès qu'ils
-// s'éloignent. La densité se règle ensuite en jeu, menu CBA.
-// Décocher « Population civile » dans ce menu arrête tout.
-[] spawn fnc_hds_vie_civile;
+// s'éloignent. Tout se règle ici, dans l'ordre :
+//   véhicules en circulation, habitants par agglomération, poser
+//   l'ambiance, rayon d'ambiance (m), portée du trafic (m), oubli (m).
+// -1 : laisser le curseur du menu CBA décider.
+[8, -1, true, 300, 500, 1200] spawn fnc_hds_vie_civile;
 
 // ----- Déroulé -----
 
