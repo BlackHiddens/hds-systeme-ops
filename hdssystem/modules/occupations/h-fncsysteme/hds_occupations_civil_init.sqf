@@ -167,6 +167,7 @@ private _fnQuelquePart = {
 private _routes = _centre nearRoads _taille;
 
 private _poses = 0;
+private _dernierPieton = objNull;
 
 for "_i" from 1 to _nb do {
 
@@ -206,10 +207,30 @@ for "_i" from 1 to _nb do {
         _grpP setBehaviour "CARELESS";
         _grpP setSpeedMode "LIMITED";
 
-        _hommeP enableDynamicSimulation true;
+        // Pas de simulation dynamique sur un pieton d'ambiance : il
+        // est deja supprime des qu'il s'eloigne, le geler en plus ne
+        // fait qu'ajouter une facon de le voir immobile.
         _hommeP setVariable ["hds_civil_ambiance", true, true];
+        _dernierPieton = _hommeP;
         _poses = _poses + 1;
     };
+};
+
+// ─── De quoi trancher au prochain essai ───
+// « Je ne croise aucun piéton » peut vouloir dire trois choses : ils
+// n'existent pas, ils existent mais n'ont pas d'itinéraire, ou ils en
+// ont un mais la simulation est coupée. On relève les trois sur le
+// dernier piéton créé plutôt que de continuer à deviner.
+if (!isNull _dernierPieton) then {
+    private _grpP = group _dernierPieton;
+
+    ["INFO", "CIVILS", format [
+        "temoin pieton : %1 waypoint(s), simulation %2, comportement %3, a %4 m du centre",
+        count (waypoints _grpP),
+        ["COUPEE", "active"] select (simulationEnabled _dernierPieton),
+        behaviour _dernierPieton,
+        round (_dernierPieton distance2D _centre)
+    ]] call hds_fnc_log;
 };
 
 ["INFO", "CIVILS", format [

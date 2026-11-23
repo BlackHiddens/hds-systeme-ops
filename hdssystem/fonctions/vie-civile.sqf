@@ -218,7 +218,18 @@ while {true} do {
             if (_f > _facteurMax) then { _facteurMax = _f };
         } forEach _joueurs;
 
-        private _compteTrafic = ((round (_voulu * _facteurMax)) max 1) min 30;
+        // ── Pourquoi un facteur doux, et un plafond bas ──
+        // FindSpawnSegment refuse tout emplacement a moins de 100 m d'un
+        // autre vehicule, dans l'anneau 300-500 m. Sur une carte comme
+        // Stratis, il n'y a pas assez de bitume dans cet anneau pour y
+        // caser vingt voitures espacees de 100 m : passe un certain
+        // nombre, ses dix tentatives echouent toutes et il ne pose plus
+        // rien du tout.
+        //
+        // Demander 24 vehicules revenait donc a en obtenir moins qu'en
+        // demandant 8. Le facteur reste, mais doux, et plafonne a 14.
+        private _facteurDoux = 1 + ((_facteurMax - 1) * 0.35);
+        private _compteTrafic = ((round (_voulu * _facteurDoux)) max 1) min 14;
 
         if (_compteTrafic != (missionNamespace getVariable ["hds_engima_count", -1])) then {
             hds_engima_count = _compteTrafic;
