@@ -99,13 +99,28 @@ private _parties = [];
     };
 } forEach hds_factions;
 
+// ─── Relief de la carte ───
+// Il part avec le registre : un seul bouton en jeu, un seul collage
+// dans le générateur, et celui-ci peut dessiner la carte du serveur
+// au lieu d'afficher des coordonnées nues.
+//
+// Sous hds_fnc_proteger : échantillonner 9216 points fait appel au
+// moteur de terrain, et un export de factions ne doit pas tomber
+// parce qu'une carte moddée répond de travers. Sans relief, le
+// générateur retombe sur son plan schématique.
+private _terrain = "";
+([{ [] call hds_fnc_terrainExport }, "FACTIONS"] call hds_fnc_proteger) params ["_okT", "_sortieT"];
+if (_okT) then { _terrain = _sortieT param [0, ""] };
+if (!(_terrain isEqualTo "")) then { _terrain = "," + _terrain };
+
 private _json = format [
-    "{""hds"":1,""carte"":""%1"",""mission"":""%2"",""date"":""%3"",""mods"":[%4],""factions"":[%5]}",
+    "{""hds"":1,""carte"":""%1"",""mission"":""%2"",""date"":""%3"",""mods"":[%4],""factions"":[%5]%6}",
     worldName call _echappe,
     briefingName call _echappe,
     _date,
     _mods joinString ",",
-    _parties joinString ","
+    _parties joinString ",",
+    _terrain
 ];
 
 // Toujours dans le RPT : outils\extraire-log.ps1 peut le récupérer même

@@ -123,6 +123,18 @@ diag_log "[HDS][SYSTEME] Systeme pret";
 // moins bien placée pour tomber en panne. splitString et toString sont
 // là depuis toujours ; le préprocesseur retire les commentaires, un
 // fichier qui n'a plus que de l'espace rend un tableau vide.
+// ─── Prérequis mod ───
+// Sans CBA, le premier CBA_fnc_* rencontré est une variable indéfinie,
+// et en SQF cela avorte le script entier. On s'arrêtait donc en plein
+// milieu, au hasard de l'exécution, en laissant un RPT illisible.
+// Mieux vaut un serveur qui démarre et dit pourquoi il ne joue pas.
+if (!(missionNamespace getVariable ["hds_prerequis_ok", true])) exitWith {
+    ["ERREUR", "SYSTEME",
+     "CBA_A3 est absent : la mission n'est pas lancee. Active CBA_A3 cote serveur et relance."
+    ] call hds_fnc_log;
+    diag_log "[HDS][SYSTEME] /!\ ARRET : CBA_A3 est requis.";
+};
+
 private _mission = preprocessFile "hdssystem\init-scenario.sqf";
 private _blancs  = toString [32, 9, 10, 13];
 

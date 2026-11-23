@@ -195,6 +195,11 @@ hds_fnc_factionsDump          = compile preprocessFile "hdssystem\modules\factio
 hds_fnc_factionsExport        = compile preprocessFile "hdssystem\modules\factions\fncs\export.sqf";
 hds_fnc_factionsExportDemande = compile preprocessFile "hdssystem\modules\factions\fncs\export-demande.sqf";
 
+// Le relief de la carte voyage avec le registre : meme bouton, meme
+// collage. Le generateur peut donc dessiner la vraie carte du serveur
+// sans rien demander de plus a l'utilisateur.
+hds_fnc_terrainExport         = compile preprocessFile "hdssystem\modules\factions\fncs\export-terrain.sqf";
+
 // ═══════════════════════════════════════════════════════════
 // SCAN AU DÉMARRAGE — MODE D'EXÉCUTION
 // ═══════════════════════════════════════════════════════════

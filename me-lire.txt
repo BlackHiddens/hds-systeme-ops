@@ -9,7 +9,10 @@ version reste dans l'historique git.
 PRÉREQUIS
 ---------
 CBA_A3, et rien d'autre. ACE3 n'est plus une dépendance : tout ce qui
-en dépendait a été réécrit en vanilla. Les autres mods (RHS, CUP…) sont
+en dépendait a été réécrit en vanilla. Sans CBA, le système se charge
+mais ne lance pas la mission, et dit pourquoi dans le journal : une
+variable CBA indéfinie avorte le script SQF entier, et le serveur
+partait en cascade d'erreurs dont aucune ne nommait la cause. Les autres mods (RHS, CUP…) sont
 détectés à chaud — le registre de factions s'adapte à ce qui est chargé.
 
 
@@ -52,6 +55,16 @@ c'est le système qui a un défaut.
 Son bouton « Guide » répond aux questions d'installation : quels
 dossiers copier, lesquels ne jamais ouvrir, les mods nécessaires, et
 quoi faire quand ça ne démarre pas. À lire en premier.
+
+En mode « Scénario privé », l'onglet « En clair » dessine la carte de
+tes étapes : une épingle numérotée par position, son rayon, le trajet
+entre deux étapes et sa distance. Dessous, il prévient de ce qu'un
+champ seul ne peut pas voir — une coordonnée tombée dans la mer, une
+étape à 4 km de la suivante, deux occupations superposées, la position
+d'exemple jamais remplacée.
+
+Importe le registre du serveur (voir OUTILS ADMIN) et c'est ta vraie
+carte qui s'affiche, trait de côte et noms de villages compris.
 
 
 LES MODULES
@@ -96,6 +109,13 @@ OUTILS ADMIN
 Échap → « HDS — Outils admin » : copie du journal, des erreurs, et du
 registre de factions en JSON. Réservé aux UID listés dans
 hds_administrateurs.
+
+Le registre emporte aussi le relief de la carte : une grille de 96 x 96
+hauteurs, un caractère par point, 9 Ko. C'est ce qui permet au
+générateur de dessiner ta carte. Aucune commande SQF ne sait extraire
+l'image satellite d'une carte, et l'embarquer coûterait des centaines
+de kilo-octets ; le relief, lui, marche sur toutes les cartes, moddées
+comprises.
 
 
 CE QUI N'EST PLUS LÀ

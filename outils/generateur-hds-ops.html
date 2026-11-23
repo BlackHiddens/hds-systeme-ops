@@ -282,6 +282,27 @@ textarea { resize: vertical; line-height: 1.55; }
 .issues.warn { background: var(--warn-soft); color: var(--warn); }
 .issues li { margin: 3px 0; }
 .issues .issue { padding: 0; border: 0; background: none; color: inherit; text-align: left; text-decoration: underline; text-underline-offset: 2px; font-weight: 500; }
+
+/* ---------- la carte des étapes ---------- */
+.plan { margin: 0 0 14px; }
+.plan-box { position: relative; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.plan-box svg { display: block; width: 100%; height: auto; }
+.plan-cap { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 7px 2px 0; font-size: 11.5px; color: var(--muted); }
+.plan-cap b { font-weight: 600; color: var(--ink-2); }
+.plan-pin { cursor: pointer; }
+.plan-pin .pin-h { opacity: 0; transition: opacity 0.14s var(--ease); }
+.plan-pin:hover .pin-h, .plan-pin:focus-visible .pin-h { opacity: 1; }
+.plan-pin:focus-visible { outline: none; }
+.plan-none { padding: 26px 18px; text-align: center; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.advice { margin: 0 0 14px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.advice li { padding: 8px 11px; border-radius: 8px; font-size: 12.5px; line-height: 1.45; }
+.advice .lv-bad { background: var(--danger-soft); color: var(--danger); }
+.advice .lv-warn { background: var(--warn-soft); color: var(--warn); }
+.advice .lv-info { background: var(--accent-soft); color: var(--accent-strong); }
+.advice .lv-ok { background: var(--ok-soft); color: #0b7a36; }
+.advice .a-n { font-weight: 600; }
+:root[data-theme="dark"] .advice .lv-ok { color: var(--ok); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .advice .lv-ok { color: var(--ok); } }
 .out-foot { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 18px; border-top: 1px solid var(--line); background: var(--surface-2); }
 .out-file { font: 11.5px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
 
@@ -600,6 +621,8 @@ body.wiki-on .bar { display: none !important; }
       <div class="out-body">
         <section id="paneClair" aria-label="Ta mission en clair">
           <p class="lead">Relis ta mission avant de copier. Si une phrase ne dit pas ce que tu voulais, corrige l'étape à gauche.</p>
+          <div class="plan" id="plan" hidden></div>
+          <ul class="advice" id="advice" hidden></ul>
           <p class="clair-sub" id="brief"></p>
           <p class="clair-ctx" id="clairCtx"></p>
           <div id="desc"></div>
@@ -749,7 +772,35 @@ body.wiki-on .bar { display: none !important; }
       <span class="wk-ic violet"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m7 10 2.4 2.4L7 14.8M12.8 15H17"/></svg></span>
       <strong>Échap &rarr; HDS &mdash; Outils admin</strong>
       <p>Copie le journal, les erreurs, ou le registre des factions du serveur, pour les coller ailleurs. Réservé aux UID listés dans <code>hds_administrateurs</code>.</p>
-      <p class="wk-note">Ce registre, collé dans &laquo;&nbsp;Registre du serveur&nbsp;&raquo; ici, fait apparaître tes vraies factions dans les listes.</p>
+      <p class="wk-note">Ce registre, collé dans &laquo;&nbsp;Registre du serveur&nbsp;&raquo; ici, fait apparaître tes vraies factions dans les listes &mdash; <b>et dessine ta carte</b> dans l'onglet &laquo;&nbsp;En clair&nbsp;&raquo;.</p>
+    </div>
+  </div>
+
+  <h3 class="wk-h"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4-6 2.5v13L9 17l6 2.5 6-2.5v-13L15 6.5z"/><path d="M9 4v13M15 6.5v13"/></svg> Voir ta mission sur la carte</h3>
+  <div class="wk-grid">
+    <div class="wk-card">
+      <span class="wk-ic blue"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+      <strong>Un scénario privé, c'est de la géographie</strong>
+      <p>Chaque étape située apparaît comme une épingle numérotée dans l'onglet
+        &laquo;&nbsp;En clair&nbsp;&raquo;, avec son rayon, le trajet entre les étapes et sa distance.
+        Clique une épingle&nbsp;: son formulaire s'ouvre à gauche.</p>
+      <p class="wk-note">Le point vert, c'est là où ramener quelqu'un. Le trait pointillé va de la
+        récupération à la livraison.</p>
+    </div>
+    <div class="wk-card">
+      <span class="wk-ic violet"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 4-6 2.5v13L9 17l6 2.5 6-2.5v-13L15 6.5z"/><path d="M9 4v13M15 6.5v13"/></svg></span>
+      <strong>Pour la vraie carte&nbsp;: importe le registre</strong>
+      <p>En jeu, <b>Échap &rarr; HDS &mdash; Outils admin &rarr; Copier le registre</b>, puis colle-le dans
+        &laquo;&nbsp;Registre du serveur&nbsp;&raquo;. Le relief de ta carte part avec&nbsp;: elle se dessine
+        pour de vrai, avec le trait de côte et le nom des villages.</p>
+      <p class="wk-note">Sans ça, tu as un plan schématique. Ça marche aussi, c'est juste moins parlant.</p>
+    </div>
+    <div class="wk-card">
+      <span class="wk-ic green"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/></svg></span>
+      <strong>Il te prévient avant la partie</strong>
+      <p>Sous la carte&nbsp;: une coordonnée tombée dans la mer, une étape à 4&nbsp;km de la suivante
+        (avec le temps de marche), deux occupations superposées, la position d'exemple jamais remplacée.</p>
+      <p class="wk-note">Quand il n'y a rien à redire, il le dit aussi. Pas de ligne verte&nbsp;? Lis les autres.</p>
     </div>
   </div>
 
@@ -885,6 +936,7 @@ function readRegistre(data) {
     mission: reparerAccents(String(d.mission || '')),
     date: String(d.date || ''),
     mods: Array.isArray(d.mods) ? d.mods.map((m) => reparerAccents(String(m))) : [],
+    terrain: lireTerrain(d.terrain),
     factions: list.map((f) => ({
       id: f.id,
       nom: reparerAccents(String(f.nom || f.id)),
@@ -2666,6 +2718,470 @@ function renderReg() {
     forget.hidden = true;
   }
 }
+/* ---------- la carte des étapes ---------- */
+/* Le relief arrive du serveur AVEC le registre de factions : même
+   bouton en jeu, même collage ici. Une grille de 96 × 96 hauteurs, un
+   caractère par point — 9 Ko, soit le quart du registre quand RHS est
+   chargé. On en fait une image de 96 × 96 pixels que le navigateur
+   agrandit, et on pose les étapes par-dessus en SVG : net, cliquable,
+   et qui suit le thème.
+
+   Aucune commande SQF ne sait extraire l'image satellite d'une carte,
+   et l'embarquer pèserait des centaines de kilo-octets pour une seule
+   carte. Le relief, lui, marche partout, cartes moddées comprises.
+
+   Sans registre importé, la carte existe quand même : un plan
+   schématique cadré sur les étapes. C'est moins joli, et ça suffit
+   déjà à voir qu'un objectif est à 4 km du point de livraison. */
+
+const PL_A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const PL_I = (() => { const m = {}; for (let i = 0; i < PL_A.length; i += 1) m[PL_A[i]] = i; return m; })();
+/* La position d'exemple des champs : trois étapes qui la gardent, ce
+   n'est pas une mission, c'est un formulaire pas rempli. */
+const PL_EX = [4506.92, 5729.59];
+
+function lireTerrain(t) {
+  if (!t || typeof t !== 'object') return null;
+  const g = parseInt(t.g, 10);
+  const taille = Number(t.taille);
+  const hmax = Number(t.hmax) || 1;
+  const h = typeof t.h === 'string' ? t.h : '';
+  if (!(g > 1) || !(taille > 0) || h.length < g * g) return null;
+  const lieux = (Array.isArray(t.lieux) ? t.lieux : [])
+    .filter((l) => l && isFinite(Number(l.x)) && isFinite(Number(l.y)))
+    .map((l) => ({
+      n: reparerAccents(String(l.n == null ? '' : l.n)),
+      t: String(l.t == null ? '' : l.t),
+      x: Number(l.x), y: Number(l.y), r: Number(l.r) || 60,
+    }));
+  return { g, taille, hmax, h, lieux };
+}
+const planTerrain = () => (REGISTRE && REGISTRE.terrain) || null;
+const planSombre = () => (themeChoix ? themeChoix === 'dark' : SOMBRE.matches);
+const planEsc = (s) => String(s == null ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+function planAlt(t, ix, iy) {
+  const v = PL_I[t.h.charAt(iy * t.g + ix)];
+  return v == null ? 0 : v;
+}
+/* Mer ou pas : on regarde la cellule ET ses huit voisines. Une cellule
+   fait 85 m sur Stratis mais 320 m sur Altis — sans ce voisinage, un
+   objectif posé sur une plage étroite passerait pour noyé. */
+function planEstMer(t, x, y) {
+  const ix = Math.floor((x / t.taille) * t.g);
+  const iy = Math.floor((y / t.taille) * t.g);
+  if (ix < 0 || iy < 0 || ix >= t.g || iy >= t.g) return false;
+  for (let dy = -1; dy <= 1; dy += 1) {
+    for (let dx = -1; dx <= 1; dx += 1) {
+      const jx = ix + dx; const jy = iy + dy;
+      if (jx < 0 || jy < 0 || jx >= t.g || jy >= t.g) continue;
+      if (planAlt(t, jx, jy) > 0) return false;
+    }
+  }
+  return true;
+}
+
+/* L'image du relief. Recalculée seulement si la carte ou le thème
+   change : 9216 pixels, c'est rapide, mais pas à chaque frappe. */
+let planImgCache = { k: '', url: '' };
+function planImage(t) {
+  const k = t.taille + ':' + t.g + ':' + t.hmax + ':' + (planSombre() ? 'd' : 'l');
+  if (planImgCache.k === k) return planImgCache.url;
+  const g = t.g;
+  let url = '';
+  try {
+    const cv = document.createElement('canvas');
+    cv.width = g; cv.height = g;
+    const cx = cv.getContext('2d');
+    const im = cx.createImageData(g, g);
+    const nuit = planSombre();
+    const MER = nuit ? [20, 32, 44] : [199, 218, 232];
+    const RAMPE = nuit
+      ? [[38, 52, 40], [50, 65, 43], [66, 66, 46], [78, 67, 50], [94, 86, 74]]
+      : [[222, 230, 206], [194, 210, 167], [206, 198, 153], [200, 179, 139], [238, 230, 220]];
+    for (let iy = 0; iy < g; iy += 1) {
+      for (let ix = 0; ix < g; ix += 1) {
+        const v = planAlt(t, ix, iy);
+        let c;
+        if (v === 0) {
+          c = MER;
+        } else {
+          const s = ((v - 1) / 62) * (RAMPE.length - 1);
+          const i0 = Math.min(RAMPE.length - 1, Math.floor(s));
+          const i1 = Math.min(RAMPE.length - 1, i0 + 1);
+          const f = s - i0;
+          c = [0, 1, 2].map((j) => RAMPE[i0][j] + (RAMPE[i1][j] - RAMPE[i0][j]) * f);
+          /* Ombrage : soleil au nord-ouest, comme sur toutes les cartes
+             de relief. La pente se lit sur le voisin dans cette
+             direction — au nord, donc iy + 1 : le serveur exporte dans
+             le sens d'Arma, pas celui de l'image. */
+          const nw = planAlt(t, Math.max(0, ix - 1), Math.min(g - 1, iy + 1));
+          const o = Math.max(0.76, Math.min(1.24, 1 + ((v - nw) / 62) * 5));
+          c = c.map((n) => Math.max(0, Math.min(255, n * o)));
+        }
+        const o = ((g - 1 - iy) * g + ix) * 4;
+        im.data[o] = c[0]; im.data[o + 1] = c[1]; im.data[o + 2] = c[2]; im.data[o + 3] = 255;
+      }
+    }
+    cx.putImageData(im, 0, 0);
+    url = cv.toDataURL('image/png');
+  } catch (e) { url = ''; }
+  planImgCache = { k, url };
+  return url;
+}
+
+/* Les points à poser : une épingle par position d'étape. « centre »
+   partout, « livraison » pour les étapes qui ramènent quelqu'un. */
+function planPoints(vs) {
+  const out = [];
+  (vs.steps || []).forEach((s, i) => {
+    const def = STEPS[s.type];
+    if (!def) return;
+    const fr = def.fields.find((f) => f.t === 'int' && (f.k === 'taille' || f.k === 'rayon'));
+    let r = 0;
+    if (fr) {
+      const n = parseInt(s.v[fr.k], 10);
+      r = Number.isFinite(n) ? n : (Number(fr.def) || 0);
+    }
+    const c = parsePos(s.v.centre);
+    if (c) out.push({ id: s.id, n: i + 1, type: s.type, label: def.label, task: !!def.task, x: c[0], y: c[1], r, kind: 'main' });
+    const d = parsePos(s.v.livraison);
+    if (d) out.push({ id: s.id, n: i + 1, type: s.type, label: def.label, task: !!def.task, x: d[0], y: d[1], r: 0, kind: 'drop' });
+  });
+  return out;
+}
+
+/* Le cadre. Avec le relief : toute la carte, à l'échelle. Sans :
+   on cadre sur les étapes, avec de la marge. */
+function planCadre(t, pts) {
+  if (t) return { x0: 0, y0: 0, w: t.taille };
+  if (!pts.length) return null;
+  let a = Infinity; let b = Infinity; let c = -Infinity; let d = -Infinity;
+  pts.forEach((p) => {
+    const r = Math.max(p.r, 80);
+    a = Math.min(a, p.x - r); c = Math.max(c, p.x + r);
+    b = Math.min(b, p.y - r); d = Math.max(d, p.y + r);
+  });
+  const w = Math.max(c - a, d - b, 400) * 1.3;
+  return { x0: (a + c) / 2 - w / 2, y0: (b + d) / 2 - w / 2, w };
+}
+function planPas(w) {
+  const cs = [50, 100, 200, 500, 1000, 2000, 5000, 10000];
+  for (let i = 0; i < cs.length; i += 1) if (w / cs[i] <= 10) return cs[i];
+  return 10000;
+}
+const planDist = (a, b) => Math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+/* ~4,5 km/h en équipement : 75 m par minute. */
+const planMarche = (m) => Math.max(1, Math.round(m / 75));
+
+function renderPlan(vs) {
+  const box = $('plan');
+  const t = planTerrain();
+  const pts = planPoints(vs);
+
+  /* Mode public : pas une seule coordonnée dans le formulaire. Une
+     carte sans épingle n'apprendrait rien et chargerait la page. */
+  if (state.mode !== 'prive' || (!t && !pts.length)) {
+    box.hidden = true;
+    box.textContent = '';
+    return;
+  }
+  box.hidden = false;
+
+  const f = planCadre(t, pts);
+  if (!f) { box.hidden = true; box.textContent = ''; return; }
+  const S = 1000;
+  /* Le relief est une image, pas un fond de page : un libellé posé
+     dessus doit tenir sur du vert, du sable et du bleu nuit à la fois.
+     D'où le halo sous chaque texte, plutôt qu'une couleur de thème qui
+     disparaîtrait une fois sur deux. */
+  const nuit = planSombre();
+  const encre = nuit ? 'rgba(255,255,255,.88)' : 'rgba(0,0,0,.76)';
+  const halo = nuit ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.8)';
+  const trait = nuit ? 'rgba(255,255,255,.14)' : 'rgba(0,0,0,.14)';
+  const grad = nuit ? 'rgba(255,255,255,.5)' : 'rgba(0,0,0,.45)';
+  const px = (x) => ((x - f.x0) / f.w) * S;
+  const py = (y) => S - ((y - f.y0) / f.w) * S;
+  const pr = (r) => (r / f.w) * S;
+  const g = [];
+
+  if (t) {
+    const url = planImage(t);
+    if (url) g.push('<image class="plan-img" href="' + url + '" x="0" y="0" width="' + S + '" height="' + S + '" preserveAspectRatio="none"/>');
+  }
+
+  /* Quadrillage au pas rond, gradué avec les vraies coordonnées :
+     c'est ce que l'utilisateur lit dans l'éditeur Arma. */
+  const pas = planPas(f.w);
+  const k0 = Math.ceil(f.x0 / pas) * pas;
+  const gl = [];
+  const gt = [];
+  for (let v = k0; v < f.x0 + f.w; v += pas) {
+    gl.push('<path d="M' + px(v).toFixed(1) + ' 0V' + S + '"/>');
+    gt.push('<text x="' + (px(v) + 4).toFixed(1) + '" y="' + (S - 6) + '">' + v + '</text>');
+  }
+  const j0 = Math.ceil(f.y0 / pas) * pas;
+  for (let v = j0; v < f.y0 + f.w; v += pas) {
+    gl.push('<path d="M0 ' + py(v).toFixed(1) + 'H' + S + '"/>');
+    gt.push('<text x="5" y="' + (py(v) - 5).toFixed(1) + '">' + v + '</text>');
+  }
+  g.push('<g fill="none" stroke="' + (t ? trait : 'var(--line-strong)') + '" stroke-width="1">' + gl.join('') + '</g>');
+  g.push('<g font-size="13" fill="' + (t ? grad : 'var(--muted)') + '">' + gt.join('') + '</g>');
+
+  /* Les villes donnent l'échelle : sans elles, un trait de côte reste
+     une tache. Les plus grandes seulement, sinon c'est illisible. */
+  if (t && t.lieux.length) {
+    const vl = t.lieux.slice()
+      .filter((l) => l.n)
+      .sort((a, b) => b.r - a.r)
+      .slice(0, 12)
+      .map((l) => '<circle cx="' + px(l.x).toFixed(1) + '" cy="' + py(l.y).toFixed(1) + '" r="2.6"/>'
+        + '<text x="' + (px(l.x) + 5).toFixed(1) + '" y="' + (py(l.y) + 4.5).toFixed(1) + '">' + planEsc(l.n) + '</text>');
+    g.push('<g font-size="14" fill="' + encre + '" paint-order="stroke" stroke="' + halo
+      + '" stroke-width="3" stroke-linejoin="round">' + vl.join('') + '</g>');
+  }
+
+  const mains = pts.filter((p) => p.kind === 'main');
+
+  // Rayons des zones
+  g.push('<g fill="var(--accent)" fill-opacity=".1" stroke="var(--accent)" stroke-opacity=".5" stroke-width="1.6" stroke-dasharray="7 5">'
+    + mains.filter((p) => p.r > 0).map((p) => '<circle cx="' + px(p.x).toFixed(1) + '" cy="' + py(p.y).toFixed(1) + '" r="' + Math.max(3, pr(p.r)).toFixed(1) + '"/>').join('')
+    + '</g>');
+
+  // L'enchaînement, et sa distance
+  const seg = [];
+  const dtx = [];
+  for (let i = 1; i < mains.length; i += 1) {
+    const a = mains[i - 1]; const b = mains[i];
+    if (planDist(a, b) < 1) continue;
+    seg.push('<path d="M' + px(a.x).toFixed(1) + ' ' + py(a.y).toFixed(1) + 'L' + px(b.x).toFixed(1) + ' ' + py(b.y).toFixed(1) + '"/>');
+    const d = Math.round(planDist(a, b));
+    dtx.push('<text x="' + ((px(a.x) + px(b.x)) / 2).toFixed(1) + '" y="' + ((py(a.y) + py(b.y)) / 2 - 7).toFixed(1) + '" text-anchor="middle">'
+      + (d >= 1000 ? (d / 1000).toFixed(1).replace('.', ',') + ' km' : d + ' m') + '</text>');
+  }
+  // Récupération vers livraison : en pointillés, c'est un autre genre de trajet
+  pts.filter((p) => p.kind === 'drop').forEach((p) => {
+    const a = mains.find((m) => m.id === p.id);
+    if (!a) return;
+    seg.push('<path stroke-dasharray="5 4" d="M' + px(a.x).toFixed(1) + ' ' + py(a.y).toFixed(1) + 'L' + px(p.x).toFixed(1) + ' ' + py(p.y).toFixed(1) + '"/>');
+  });
+  if (seg.length) {
+    g.push('<g fill="none" stroke="' + halo + '" stroke-width="4.5" stroke-linecap="round">' + seg.join('') + '</g>');
+    g.push('<g fill="none" stroke="' + encre + '" stroke-width="2.2" stroke-linecap="round">' + seg.join('') + '</g>');
+  }
+  if (dtx.length) {
+    g.push('<g font-size="15" font-weight="600" fill="' + encre + '" paint-order="stroke" stroke="' + halo
+      + '" stroke-width="4.5" stroke-linejoin="round">' + dtx.join('') + '</g>');
+  }
+
+  // Les épingles
+  pts.forEach((p) => {
+    const X = px(p.x); const Y = py(p.y);
+    const noye = t && (p.x < 0 || p.y < 0 || p.x > t.taille || p.y > t.taille || planEstMer(t, p.x, p.y));
+    const col = noye ? 'var(--danger)' : (p.kind === 'drop' ? 'var(--ok)' : 'var(--accent)');
+    const tip = p.label + (p.kind === 'drop' ? ' · où les ramener' : '')
+      + ' — ' + Math.round(p.x) + ', ' + Math.round(p.y);
+    g.push('<g class="plan-pin" data-step="' + p.id + '" tabindex="0" role="button">'
+      + '<title>' + planEsc(tip) + '</title>'
+      + '<circle class="pin-h" cx="' + X.toFixed(1) + '" cy="' + Y.toFixed(1) + '" r="23" fill="' + col + '" fill-opacity=".22"/>'
+      + '<circle class="pin-d" cx="' + X.toFixed(1) + '" cy="' + Y.toFixed(1) + '" r="13" fill="' + col + '" stroke="var(--surface)" stroke-width="2.5"/>'
+      + '<text x="' + X.toFixed(1) + '" y="' + (Y + 5.5).toFixed(1) + '" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">'
+      + (p.kind === 'drop' ? '\u25BC' : p.n) + '</text></g>');
+  });
+
+  // Échelle
+  const sw = pr(pas);
+  g.push('<g transform="translate(' + (S - sw - 26).toFixed(1) + ',' + (S - 26) + ')">'
+    + '<path d="M0 0h' + sw.toFixed(1) + 'M0 -5v10M' + sw.toFixed(1) + ' -5v10" fill="none" stroke="' + encre + '" stroke-width="2"/>'
+    + '<text x="' + (sw / 2).toFixed(1) + '" y="-10" text-anchor="middle" font-size="14" font-weight="600" fill="' + encre + '" paint-order="stroke" stroke="' + halo + '" stroke-width="4" stroke-linejoin="round">'
+    + (pas >= 1000 ? pas / 1000 + ' km' : pas + ' m') + '</text></g>');
+
+  const vide = !pts.length
+    ? '<p class="plan-none">Ta carte, sans étape posée. Ajoute une étape et son épingle apparaîtra ici.</p>'
+    : '';
+  box.innerHTML = '<div class="plan-box"><svg viewBox="0 0 ' + S + ' ' + S + '" role="img" '
+    + 'aria-label="Plan des étapes de la mission">' + g.join('') + '</svg></div>'
+    + vide
+    + '<p class="plan-cap"><span>' + (t
+      ? '<b>' + planEsc(REGISTRE.carte) + '</b> · ' + String(Math.round(t.taille / 100) / 10).replace('.', ',') + ' km de côté · relief du serveur'
+      : '<b>Plan schématique</b> · importe le registre du serveur pour voir la vraie carte')
+    + '</span><span>' + mains.length + (mains.length > 1 ? ' étapes situées' : ' étape située') + '</span></p>';
+
+  box.querySelectorAll('.plan-pin').forEach((el) => {
+    const go = () => planGoto(parseInt(el.getAttribute('data-step'), 10));
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+}
+
+/* Cliquer une épingle ouvre son étape : la carte sert à repérer, le
+   formulaire à corriger. */
+function planGoto(id) {
+  const s = state.steps.find((x) => x.id === id);
+  if (!s) return;
+  state.steps.forEach((x) => { x.open = x.id === id; });
+  saveState();
+  renderSteps();
+  refresh();
+  const el = $('step-' + id);
+  if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/* ---------- les préconisations ---------- */
+/* La liste d'alertes existante ne valide qu'un champ à la fois : un
+   nombre négatif, un minimum qui dépasse un maximum. Elle ne peut pas
+   voir que deux étapes sont à 40 m l'une de l'autre, ou à 6 km. Ces
+   préconisations-là croisent les étapes entre elles, et ne disent que
+   des choses vérifiables — une distance, un chevauchement, une
+   position dans l'eau. Aucun jugement sur le style de la mission. */
+function planAdvice(vs, pts) {
+  const t = planTerrain();
+  const out = [];
+  const add = (lv, n, msg) => out.push({ lv, n, msg });
+  const mains = pts.filter((p) => p.kind === 'main');
+  const km = (m) => (m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(m) + ' m');
+
+  // Position d'exemple jamais remplacée
+  const ex = pts.filter((p) => Math.abs(p.x - PL_EX[0]) < 1 && Math.abs(p.y - PL_EX[1]) < 1);
+  if (ex.length >= 2) {
+    add('bad', null, ex.length + ' positions sont restées sur la coordonnée d’exemple (4506, 5729). '
+      + 'Tes étapes se superposeraient au même endroit : relève les vraies coordonnées dans l’éditeur.');
+  }
+
+  // Hors carte, ou dans l’eau — c'est l'erreur de frappe classique
+  let noyes = 0;
+  if (t) {
+    pts.forEach((p) => {
+      const ou = p.kind === 'drop' ? 'le point de livraison' : 'la position';
+      const hors = p.x < 0 || p.y < 0 || p.x > t.taille || p.y > t.taille;
+      if (!hors && !planEstMer(t, p.x, p.y)) return;
+      noyes += 1;
+      if (noyes > 3) return;
+      if (hors) {
+        add('bad', p.n, 'hors de la carte — ' + REGISTRE.carte + ' fait ' + Math.round(t.taille)
+          + ' m de côté, et ' + ou + ' est à ' + Math.round(p.x) + ', ' + Math.round(p.y) + '.');
+      } else {
+        add('bad', p.n, ou + ' (' + Math.round(p.x) + ', ' + Math.round(p.y)
+          + ') tombe dans la mer. Un chiffre de travers dans le relevé ?');
+      }
+    });
+    if (noyes > 3) {
+      add('bad', null, (noyes - 3) + ' '
+        + plural(noyes - 3, 'autre position est', 'autres positions sont')
+        + ' hors de la carte ou dans l’eau.');
+    }
+  }
+
+  /* Distances de l’enchaînement. Une par paire d'étapes, et un
+     scénario étalé sur la carte en produirait quatre qui disent la
+     même chose. On ne signale que le plus long saut. */
+  let pire = null;
+  let longs = 0;
+  for (let i = 1; i < mains.length; i += 1) {
+    const d = planDist(mains[i - 1], mains[i]);
+    if (d <= 2500) continue;
+    longs += 1;
+    if (!pire || d > pire.d) pire = { a: mains[i - 1], b: mains[i], d };
+  }
+  if (pire) {
+    add('warn', pire.b.n, 'elle est à ' + km(pire.d) + ' de l’étape ' + pire.a.n + ', soit environ '
+      + planMarche(pire.d) + ' min de marche'
+      + (longs > 1 ? ' — et c’est le plus long des ' + longs + ' sauts du scénario' : '')
+      + '. Prévois un véhicule, ou rapproche les deux.');
+  }
+
+  // Récupération → livraison
+  pts.filter((p) => p.kind === 'drop').forEach((p) => {
+    const a = mains.find((m) => m.id === p.id);
+    if (!a) return;
+    const d = planDist(a, p);
+    if (d > 3000) {
+      add('warn', p.n, 'il y a ' + km(d) + ' entre l’endroit où les joueurs récupèrent et celui où ils doivent ramener : '
+        + planMarche(d) + ' min à pied avec quelqu’un sur le dos.');
+    }
+  });
+
+  /* Zones qui se chevauchent — entre OCCUPATIONS seulement.
+     Occuper une zone puis la sécuriser au même endroit, c'est le
+     schéma normal de HDS : c'est ce que fait la mission d'exemple du
+     dépôt, trois étapes sur la même coordonnée. Avertir là-dessus,
+     c'est crier au loup sur le cas le plus courant. Deux garnisons
+     posées au même endroit, en revanche, se superposent vraiment.
+     Les deux plus serrées suffisent à alerter. */
+  const z = mains.filter((p) => p.r > 0 && p.type === 'occupation');
+  const chev = [];
+  for (let i = 0; i < z.length; i += 1) {
+    for (let j = i + 1; j < z.length; j += 1) {
+      const d = planDist(z[i], z[j]);
+      if (d < (z[i].r + z[j].r) * 0.55) chev.push({ a: z[i], b: z[j], d });
+    }
+  }
+  chev.sort((x, y) => x.d - y.d);
+  chev.slice(0, 2).forEach((c) => {
+    add('warn', null, 'Les étapes ' + c.a.n + ' et ' + c.b.n + ' occupent presque la même zone ('
+      + km(c.d) + ' entre les deux centres, pour ' + c.a.r + ' et ' + c.b.r
+      + ' m de rayon) : les deux garnisons vont se superposer. Si c’est voulu pour densifier, '
+      + 'monte plutôt la densité d’une seule.');
+  });
+  if (chev.length > 2) {
+    add('warn', null, (chev.length - 2) + ' '
+      + plural(chev.length - 2, 'autre couple d’occupations se chevauche', 'autres couples d’occupations se chevauchent')
+      + ' aussi.');
+  }
+
+  // Un rayon démesuré
+  if (t) {
+    z.forEach((p) => {
+      if (p.r > t.taille / 2) {
+        add('warn', p.n, 'un rayon de ' + p.r + ' m sur une carte de ' + Math.round(t.taille)
+          + ' m : la zone couvre plus de la moitié de la carte.');
+      }
+    });
+  }
+
+  // Aucune tâche : rien à faire pour les joueurs
+  const steps = vs.steps || [];
+  if (steps.length && !steps.some((s) => STEPS[s.type] && STEPS[s.type].task)) {
+    add('info', null, 'Aucune tâche dans ce scénario : les joueurs verront des ennemis, mais aucun objectif '
+      + 'dans leur journal. Ajoute une étape du groupe « Tâches ».');
+  }
+
+  /* Un bloc qui ne fait que rouspeter finit par ne plus être lu. Quand
+     il n'y a rien à redire, il le dit : c'est la réponse à « est-ce
+     que ça va marcher ? », que le débutant se pose à chaque fois. */
+  if (!out.length && t && mains.length >= 2) {
+    let max = 0;
+    for (let i = 1; i < mains.length; i += 1) max = Math.max(max, planDist(mains[i - 1], mains[i]));
+    /* « Le plus long trajet fait 0 m, soit 1 min à pied » : vrai, et
+       ridicule. Les trois étapes au même endroit sont le schéma le
+       plus courant — autant le dire comme tel. */
+    add('ok', null, 'Les ' + mains.length + ' étapes situées sont sur la terre ferme et dans la carte. '
+      + (max < 150
+        ? 'Elles se jouent toutes sur le même secteur.'
+        : 'Le plus long trajet fait ' + km(max) + ', soit ' + planMarche(max) + ' min à pied.'));
+  }
+
+  return out;
+}
+
+function renderAdvice(vs) {
+  const ul = $('advice');
+  ul.textContent = '';
+  if (state.mode !== 'prive') { ul.hidden = true; return; }
+  const list = planAdvice(vs, planPoints(vs));
+  ul.hidden = !list.length;
+  const ordre = { bad: 0, warn: 1, info: 2, ok: 3 };
+  list.sort((a, b) => ordre[a.lv] - ordre[b.lv]);
+  list.forEach((a) => {
+    const li = h('li', { class: 'lv-' + a.lv });
+    if (a.n != null) li.append(h('span', { class: 'a-n', text: 'Étape ' + a.n + ' : ' }));
+    li.append(document.createTextNode(a.msg));
+    ul.append(li);
+  });
+}
+
 function redrawAll() {
   renderCtx();
   renderParams();
@@ -2787,6 +3303,19 @@ function stepNode(s, i, count) {
       def.help ? tipButton(def.help) : null,
       h('button', { type: 'button', class: 'ico', 'aria-label': 'Monter', text: '↑', disabled: i === 0, onclick: move(-1) }),
       h('button', { type: 'button', class: 'ico', 'aria-label': 'Descendre', text: '↓', disabled: i === count - 1, onclick: move(1) }),
+      /* Deux otages, trois zones à occuper : sans ça il fallait
+         ré-ajouter l'étape et retaper tous ses champs. */
+      h('button', {
+        type: 'button', class: 'ico', 'aria-label': 'Dupliquer', text: '⧉',
+        onclick: () => {
+          const copie = JSON.parse(JSON.stringify(s));
+          copie.id = state.nextId; state.nextId += 1;
+          copie.open = false;
+          state.steps.splice(i + 1, 0, copie);
+          renderSteps();
+          refresh();
+        },
+      }),
       h('button', { type: 'button', class: 'ico del', 'aria-label': 'Supprimer', text: '×', onclick: () => { state.steps.splice(i, 1); renderSteps(); refresh(); } })));
 
   const main = h('div', { class: 'fields' });
@@ -2912,6 +3441,8 @@ function refresh() {
   $('code-scenario').innerHTML = highlight(sc.code);
   $('code-params').innerHTML = highlight(pa.code);
   fillClair($('desc'), $('brief'), $('clairCtx'), describe(vs));
+  renderPlan(vs);
+  renderAdvice(vs);
 
   // champs : remise à zéro, désactivés, puis erreurs
   Object.values(reg).forEach((r) => {
@@ -3012,6 +3543,9 @@ function basculeTheme() {
   themeChoix = sombre ? 'light' : 'dark';
   try { localStorage.setItem('hdsops.theme', themeChoix); } catch (e) { /* navigation privee */ }
   appliqueTheme();
+  /* Le relief est une image, pas du CSS : elle ne suit pas le theme
+     toute seule. On la redessine. */
+  if (typeof refresh === 'function') refresh();
 }
 SOMBRE.addEventListener('change', () => { if (!themeChoix) appliqueTheme(); });
 

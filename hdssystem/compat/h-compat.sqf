@@ -153,7 +153,13 @@ hds_fnc_arsenal = {
 // ═══════════════════════════════════════════════════════════
 // CONTRÔLE DU PRÉREQUIS
 // ═══════════════════════════════════════════════════════════
-if (!cbaestactive) then {
+// Ce fichier est #include dans mes-parametres.sqf, qui tourne des deux
+// côtés et compile la moitié du système après lui : un exitWith ici
+// emporterait tout le reste. On pose donc un drapeau, et c'est
+// init-systeme.sqf qui refuse de lancer la mission.
+hds_prerequis_ok = cbaestactive;
+
+if (!hds_prerequis_ok) then {
     diag_log "[HDS][COMPAT] /!\ CBA_A3 ABSENT - le systeme ne peut pas fonctionner.";
     ["<t color='#ff4444' size='1.3'>HDS : CBA_A3 est requis</t>"] remoteExecCall ["parseText", 0];
 };
