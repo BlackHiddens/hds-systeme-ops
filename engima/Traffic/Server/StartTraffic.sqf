@@ -85,6 +85,17 @@ ENGIMA_TRAFFIC_StartTraffic = {
 	    scopeName "mainScope";
 	    private ["_sleepSeconds", "_calculatedMaxVehicleCount", "_markerSize", "_avgMarkerRadius", "_coveredShare", "_restDistance", "_coveredAreaShare"];
 
+	    // ═══ Ajout HDS — seule modification de ce fichier ═══
+	    // VEHICLES_COUNT etait lu une seule fois, au demarrage. Il est
+	    // relu ici a chaque tour de boucle : fnc_hds_vie_civile le monte
+	    // quand le perimetre des joueurs contient une ville ou un
+	    // village, et le redescend en rase campagne.
+	    //
+	    // Tout le reste du script est d'origine. _calculatedMaxVehicleCount
+	    // derivait deja de _vehicleCount a chaque iteration, donc le
+	    // changement prend effet au tour suivant sans rien casser.
+	    _vehicleCount = missionNamespace getVariable ["hds_engima_count", _vehicleCount];
+
 		_allPlayerPositionsTemp = [];
 		if (isMultiplayer) then {
 			{

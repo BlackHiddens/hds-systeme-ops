@@ -128,6 +128,31 @@ private _fnSupprimer = {
     };
 };
 
+// ─── Le facteur du lieu ───
+// Un périmètre qui englobe une ville ou un village doit être plus
+// animé qu'un bout de route en rase campagne — plus de circulation ET
+// plus d'habitants. Les localisations déclarées par la carte ne
+// décident donc plus OÙ l'on peuple, mais COMBIEN.
+//
+// C'est la bonne façon de s'en servir : quand elles manquent, comme au
+// sud de Stratis, on peuple quand même, simplement à la densité de
+// base.
+private _fnFacteur = {
+    params ["_pos"];
+
+    private _f = 1;
+
+    if !((nearestLocations [_pos, ["NameCityCapital", "NameCity"], 600]) isEqualTo []) then {
+        _f = 3;
+    } else {
+        if !((nearestLocations [_pos, ["NameVillage", "NameLocal"], 450]) isEqualTo []) then {
+            _f = 1.8;
+        };
+    };
+
+    _f
+};
+
 // Secteurs déjà traités récemment : [position, instant de reprise].
 // Sans ça, un joueur immobile relancerait le peuplement toutes les huit
 // secondes au même endroit.
@@ -183,6 +208,27 @@ while {true} do {
         // Oublier les secteurs dont le délai est passé.
         _recents = _recents select { (_x select 1) > time };
 
+        // ─── LA CIRCULATION SUIT LE LIEU ───
+        // On prend le facteur le plus élevé parmi les joueurs : si l'un
+        // d'eux est en ville, la circulation monte. Engima relit ce
+        // nombre à chaque tour de sa propre boucle.
+        private _facteurMax = 1;
+        {
+            private _f = [getPosATL _x] call _fnFacteur;
+            if (_f > _facteurMax) then { _facteurMax = _f };
+        } forEach _joueurs;
+
+        private _compteTrafic = ((round (_voulu * _facteurMax)) max 1) min 30;
+
+        if (_compteTrafic != (missionNamespace getVariable ["hds_engima_count", -1])) then {
+            hds_engima_count = _compteTrafic;
+
+            ["INFO", "CIVILS", format [
+                "circulation : %1 vehicule(s) vises (densite %2 x facteur lieu %3)",
+                _compteTrafic, _voulu, _facteurMax
+            ]] call hds_fnc_log;
+        };
+
         // ─── 2. SUIVRE LES JOUEURS ───
         if (_peupler) then {
             {
@@ -211,7 +257,12 @@ while {true} do {
 
                         if ((count _maisons) >= 5) then {
 
-                            [_p, -1, _rayonAmbiance, _idCiv, false]
+                            // Le facteur du lieu joue aussi sur les
+                            // habitants : une ville est plus peuplée
+                            // qu'un hameau, à densité demandée égale.
+                            private _plus = round (_voulu * ([_p] call _fnFacteur) / 2);
+
+                            [_p, _plus, _rayonAmbiance, _idCiv, false]
                                 spawn fnc_occupations_civil_init;
 
                             [_p, _rayonAmbiance, -1, _idCiv]
