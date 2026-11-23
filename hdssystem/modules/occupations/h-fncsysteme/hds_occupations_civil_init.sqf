@@ -203,7 +203,23 @@ for "_i" from 1 to _nb do {
     } else {
         _hommeP setPosATL _depart;
 
-        [_grpP, _centre, (_taille * 0.6), 4] call BIS_fnc_taskPatrol;
+        // ── Les deux taskPatrol ne prennent pas la même chose en
+        //    quatrième position ──
+        //   BIS_fnc_taskPatrol : [groupe, position, distance
+        //       maximale entre deux étapes, LISTE NOIRE DE ZONES]
+        //   CBA_fnc_taskPatrol : [groupe, position, rayon,
+        //       NOMBRE D'ÉTAPES]
+        //
+        // Le 4 passé à la version BIS était lu comme une liste
+        // noire. Elle vérifie son type, n'y trouve pas un tableau,
+        // et sort sans créer un seul waypoint :
+        //
+        //   if ((typeName _blacklist) != (typeName [])) exitWith {};
+        //
+        // D'où des piétons parfaitement vivants et parfaitement
+        // immobiles, avec le seul waypoint que tout groupe
+        // possède d'office. C'est la version CBA qu'il fallait.
+        [_grpP, _centre, (_taille * 0.6), 4] call CBA_fnc_taskPatrol;
         _grpP setBehaviour "CARELESS";
         _grpP setSpeedMode "LIMITED";
 
