@@ -146,7 +146,9 @@ while { nombre_de_missions > 0 } do {
     // civile du serveur. On passe donc "" et on le laisse faire.
     // hds_civils_actifs est le réglage CBA « Population civile ».
     if (_civils && { missionNamespace getVariable ["hds_civils_actifs", true] }) then {
-        [_lieu, 0, _rayon, "", false] spawn fnc_occupations_civil_init;
+        // -1 : prendre la densité réglée, au lieu du 0 codé en dur qui
+        // donnait la population la plus maigre possible.
+        [_lieu, -1, _rayon, "", false] spawn fnc_occupations_civil_init;
     };
 
     if (boutiqueactive) then {

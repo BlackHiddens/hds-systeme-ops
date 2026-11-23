@@ -42,11 +42,25 @@
 
 params [
     ["_centre",          [0,0,0]],
-    ["_ratio",           0],
+    ["_ratio",           -1],
     ["_taille",          300],
     ["_nationalite",     0],
     ["_marqueurvisible", false]
 ];
+
+// ─── Pourquoi -1 et plus 0 ───
+// 0 voulait dire « n'ajoute rien au nombre déduit des maisons ». Pour
+// un paramètre de densité, c'est le plus mauvais défaut possible :
+// appelée sans argument, la fonction donnait sa population la plus
+// maigre — et dans un lieu sans maison, exactement un habitant.
+//
+// -1 veut maintenant dire « sers-toi du réglage », c'est-à-dire du
+// curseur « Densité » du menu CBA. Un 0 explicite reste un 0 : quand
+// fnc_hds_vie_civile calcule un supplément nul pour la rase campagne,
+// c'est bien ce qu'il veut.
+if (_ratio < 0) then {
+    _ratio = round ((missionNamespace getVariable ["hds_civils_densite", 8]) / 2);
+};
 
 if (!isServer) exitWith {};
 
