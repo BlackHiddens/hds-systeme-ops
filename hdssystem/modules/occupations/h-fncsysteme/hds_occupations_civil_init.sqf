@@ -341,20 +341,65 @@ private _fnBordDeRoute = {
             private _a = getPos _r;
             if (((_a distance2D _centre) <= _taille) && { !([_a] call _fnVisible) }) then {
                 private _cap = random 360;
-                private _d = 4;
-                while { _d <= 14 && { _p isEqualTo [] } } do {
-                    private _q = [
+                private _d = 5;
+                while { _d <= 16 && { _p isEqualTo [] } } do {
+                    private _bord = [
                         (_a select 0) + _d * sin _cap,
                         (_a select 1) + _d * cos _cap,
                         0
                     ];
-                    if (!(isOnRoad _q)
-                        && { !(surfaceIsWater _q) }
-                        && { !([_q] call _fnVisible) }
-                        && { !([_q, 200] call _fnSoldatProche) }) then {
-                        _p = _q;
+                    if (!(isOnRoad _bord)) then {
+                        // Deux mètres de plus : le premier point hors
+                        // chaussée est le bord exact du bitume, et le
+                        // trafic d'Engima y passe.
+                        private _q = [
+                            (_a select 0) + (_d + 2) * sin _cap,
+                            (_a select 1) + (_d + 2) * cos _cap,
+                            0
+                        ];
+                        if (!(surfaceIsWater _q)
+                            && { !([_q] call _fnVisible) }
+                            && { !([_q, 200] call _fnSoldatProche) }) then {
+                            _p = _q;
+                        };
+                        // Le bitume est passé : inutile de s'écarter plus.
+                        _d = 99;
                     };
                     _d = _d + 1.5;
+                };
+            };
+        };
+    };
+    _p
+};
+
+// ─── Le repli : autour de chez soi ───
+// Un piéton marche aux abords d'une rue. Quand il n'y en a aucune
+// d'exploitable, la seule raison acceptable d'en poser un en pleine
+// campagne est la maison isolée : on simule son propriétaire, qui
+// traîne autour de chez lui. Sans maison non plus, on ne pose rien.
+private _fnAutourDUneMaison = {
+    private _maisons = (nearestObjects [_centre, ["House"], _taille]) select {
+        !([_x] call _fnBatimentInterdit)
+    };
+    private _p = [];
+    if !(_maisons isEqualTo []) then {
+        for "_essai" from 1 to 10 do {
+            if (_p isEqualTo []) then {
+                private _m = getPosATL (selectRandom _maisons);
+                private _cap = random 360;
+                private _d = 8 + random 14;
+                private _c = [
+                    (_m select 0) + _d * sin _cap,
+                    (_m select 1) + _d * cos _cap,
+                    0
+                ];
+                if (((_c distance2D _centre) <= _taille)
+                    && { !(isOnRoad _c) }
+                    && { !(surfaceIsWater _c) }
+                    && { !([_c] call _fnVisible) }
+                    && { !([_c, 200] call _fnSoldatProche) }) then {
+                    _p = _c;
                 };
             };
         };
@@ -424,7 +469,11 @@ for "_i" from 1 to _nb do {
     // quelque part ; n'importe où dans l'anneau si aucune rue ne
     // convient. Jamais sur la chaussée.
     private _depart = if (_routes isEqualTo []) then { [] } else { call _fnBordDeRoute };
-    if (_depart isEqualTo []) then { _depart = [_taille] call _fnQuelquePart };
+
+    // Pas de rue : chez lui, ou nulle part. L'ancien repli le posait
+    // n'importe où dans l'anneau, et c'est ainsi qu'on se retrouvait
+    // avec un promeneur au milieu d'un champ.
+    if (_depart isEqualTo []) then { _depart = call _fnAutourDUneMaison };
 
     private _grpP = if (_depart isEqualTo []) then { grpNull } else { createGroup [civilian, true] };
     private _hommeP = if (isNull _grpP) then { objNull } else {
@@ -470,18 +519,25 @@ for "_i" from 1 to _nb do {
 
                 if (_assezLoin) then {
                     private _cap = random 360;
-                    private _d = 4;
+                    private _d = 5;
                     private _q = [];
-                    while { _d <= 12 && { _q isEqualTo [] } } do {
-                        private _c = [
+                    while { _d <= 16 && { _q isEqualTo [] } } do {
+                        private _bord = [
                             (_a select 0) + _d * sin _cap,
                             (_a select 1) + _d * cos _cap,
                             0
                         ];
-                        if (!(isOnRoad _c)
-                            && { !(surfaceIsWater _c) }
-                            && { !([_c, 60] call _fnSoldatProche) }) then {
-                            _q = _c;
+                        if (!(isOnRoad _bord)) then {
+                            private _c = [
+                                (_a select 0) + (_d + 2) * sin _cap,
+                                (_a select 1) + (_d + 2) * cos _cap,
+                                0
+                            ];
+                            if (!(surfaceIsWater _c)
+                                && { !([_c, 60] call _fnSoldatProche) }) then {
+                                _q = _c;
+                            };
+                            _d = 99;
                         };
                         _d = _d + 2;
                     };
@@ -505,9 +561,10 @@ for "_i" from 1 to _nb do {
             private _boucle = _grpP addWaypoint [_depart, 0];
             _boucle setWaypointType "CYCLE";
         } else {
-            // Aucune rue exploitable : il reste chez lui plutôt que
-            // d'aller se perdre dans les bois.
-            [_grpP, _depart, 60, 3] call CBA_fnc_taskPatrol;
+            // Aucune rue exploitable autour de lui : il tourne autour
+            // de chez lui, sur quarante mètres. S'il n'avait pas de
+            // maison, il n'aurait pas été créé.
+            [_grpP, _depart, 40, 3] call CBA_fnc_taskPatrol;
         };
         _grpP setBehaviour "CARELESS";
         _grpP setSpeedMode "LIMITED";
