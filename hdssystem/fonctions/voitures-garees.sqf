@@ -63,6 +63,35 @@ private _joueurs = allPlayers select {
     alive _x && { !(_x isKindOf "HeadlessClient_F") }
 };
 
+// ─── Ni dans une position tenue, ni dans une zone occupée ───
+// Les joueurs et leurs équipiers ne comptent pas : on veut des
+// voitures garées dans les rues où ils passent.
+private _grpJoueurs = allPlayers apply { group _x };
+private _soldats = allUnits select {
+    alive _x
+    && { (side _x) != civilian }
+    && { !((group _x) in _grpJoueurs) }
+};
+
+private _zonesOccupees = [];
+{
+    if (((_x find "hds_occups_") == 0) && { (_x find "hds_occups_civil_") != 0 }) then {
+        _zonesOccupees pushBack [getMarkerPos _x, (markerSize _x) select 0];
+    };
+} forEach allMapMarkers;
+
+private _fnMilitaire = {
+    params ["_p"];
+    private _non = false;
+    { if (!_non && { (_x distance2D _p) < 80 }) then { _non = true } } forEach _soldats;
+    {
+        if (!_non && { (_p distance2D (_x select 0)) < ((_x select 1) + 40) }) then {
+            _non = true;
+        };
+    } forEach _zonesOccupees;
+    _non
+};
+
 // Aucun exitWith imbriqué : dans un then, il sort du test et non de la
 // boucle.
 private _fnVisible = {
@@ -146,11 +175,14 @@ private _refusObjet = 0;
 private _refusArbre = 0;
 private _refusPente = 0;
 private _refusVu    = 0;
+private _refusMili  = 0;
 
 private _fnLibre = {
     params ["_p"];
 
     if ([_p] call _fnVisible) exitWith { _refusVu = _refusVu + 1; false };
+
+    if ([_p] call _fnMilitaire) exitWith { _refusMili = _refusMili + 1; false };
 
     if (surfaceIsWater _p) exitWith { _refusEau = _refusEau + 1; false };
 
@@ -279,11 +311,11 @@ while { _poses < _nombre && { _essais < (_nombre * 25) } } do {
 
 if (_poses > 0 || { hdssysteme }) then {
     ["INFO", "CIVILS", format [
-        "voitures garees : %1 sur %2 autour de [%3,%4] - %5 route(s) habitee(s), %6 essais, distance min %7 m - refus : vue %8, eau %9, objet %10, arbre %11, pente %12",
+        "voitures garees : %1 sur %2 autour de [%3,%4] - %5 route(s) habitee(s), %6 essais, distance min %7 m - refus : vue %8, militaire %9, eau %10, objet %11, arbre %12, pente %13",
         _poses, _nombre,
         round (_centre select 0), round (_centre select 1),
         count _routes, _essais, round _distanceMin,
-        _refusVu, _refusEau, _refusObjet, _refusArbre, _refusPente
+        _refusVu, _refusMili, _refusEau, _refusObjet, _refusArbre, _refusPente
     ]] call hds_fnc_log;
 };
 

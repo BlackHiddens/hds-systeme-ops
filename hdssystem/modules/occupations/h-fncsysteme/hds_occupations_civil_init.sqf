@@ -186,6 +186,82 @@ private _joueurs = allPlayers select {
     alive _x && { !(_x isKindOf "HeadlessClient_F") }
 };
 
+// ════════════════════════════════════════════════════════
+// LES MILITAIRES, ET CE QU'ILS TIENNENT
+// ════════════════════════════════════════════════════════
+// Un civil peut passer PRÈS d'une position tenue, jamais dedans. On
+// ne cherche pas la zone déclarée par le scénario — un ennemi posé à
+// la main dans l'éditeur n'en fait partie d'aucune — mais les soldats
+// eux-mêmes : ça couvre tout, quelle qu'en soit l'origine.
+//
+// Les joueurs et leurs équipiers ne comptent pas : on veut des civils
+// AUTOUR des joueurs, c'est tout le propos.
+private _grpJoueurs = allPlayers apply { group _x };
+private _soldats = allUnits select {
+    alive _x
+    && { (side _x) != civilian }
+    && { !((group _x) in _grpJoueurs) }
+};
+
+// Les zones d'occupation posées par le scénario. Une zone existe dès
+// que fnc_hds_occupations l'a marquée, parfois avant que ses hommes
+// soient en place : sans ça, des civils s'y installaient dans
+// l'intervalle. On écarte « hds_occups_civil_ », qui est le nôtre.
+private _zonesOccupees = [];
+{
+    if (((_x find "hds_occups_") == 0) && { (_x find "hds_occups_civil_") != 0 }) then {
+        _zonesOccupees pushBack [getMarkerPos _x, (markerSize _x) select 0];
+    };
+} forEach allMapMarkers;
+
+private _fnSoldatProche = {
+    params ["_pos", "_d"];
+    private _proche = false;
+    {
+        if (!_proche && { (_x distance2D _pos) < _d }) then { _proche = true };
+    } forEach _soldats;
+
+    {
+        if (!_proche && { (_pos distance2D (_x select 0)) < ((_x select 1) + 40) }) then {
+            _proche = true;
+        };
+    } forEach _zonesOccupees;
+
+    _proche
+};
+
+// Un bâtiment militaire n'accueille pas de civil assis chez lui. Deux
+// signaux, parce qu'aucun des deux ne suffit seul :
+//
+//   — le nom de classe. Il n'existe pas de drapeau « militaire » dans
+//     la config ; on reconnaît donc des morceaux de nom. La liste est
+//     volontairement courte et sans ambiguïté : « cargo_house » par
+//     exemple n'y est PAS, c'est de l'habitat sur Altis et Stratis.
+//   — la présence de soldats. C'est le cas que tu décris : des
+//     hommes qui tiennent un bâtiment ordinaire, en pleine ville.
+private _motsMilitaires = [
+    "bunker", "hbarrier", "barrack", "hangar", "airport", "mil_",
+    "military", "radar", "watchtower", "guardhouse", "fort_", "camonet",
+    "sandbag", "pillbox", "cargo_patrol", "cargo_hq", "cargo_tower",
+    "checkpoint", "ammo", "command"
+];
+
+private _fnBatimentInterdit = {
+    params ["_b"];
+    private _nom = toLower (typeOf _b);
+    private _interdit = false;
+    {
+        if (!_interdit && { (_nom find _x) >= 0 }) then { _interdit = true };
+    } forEach _motsMilitaires;
+
+    if (!_interdit) then {
+        // Tenu par des hommes en armes : un civil n'y entre pas.
+        if ([getPosATL _b, 30] call _fnSoldatProche) then { _interdit = true };
+    };
+
+    _interdit
+};
+
 // Le cône de vision se mesure sur la direction du CORPS, pas du
 // regard : eyeDirection vaut ce que vaut sa synchronisation vers le
 // serveur, alors que getDir est fiable partout. On ne vise pas la
@@ -237,7 +313,12 @@ private _fnQuelquePart = {
                 (_centre select 1) + _d * cos _a,
                 0
             ];
-            if (!([_p] call _fnVisible)) then { _trouve = _p };
+            // 200 m des soldats : la ronde fait 120 m de rayon, donc
+            // un civil peut s'approcher à 80 m d'une position tenue
+            // sans jamais la traverser.
+            if (!([_p] call _fnVisible) && { !([_p, 200] call _fnSoldatProche) }) then {
+                _trouve = _p;
+            };
         };
     };
     _trouve
@@ -267,7 +348,10 @@ private _fnBordDeRoute = {
                         (_a select 1) + _d * cos _cap,
                         0
                     ];
-                    if (!(isOnRoad _q) && { !(surfaceIsWater _q) } && { !([_q] call _fnVisible) }) then {
+                    if (!(isOnRoad _q)
+                        && { !(surfaceIsWater _q) }
+                        && { !([_q] call _fnVisible) }
+                        && { !([_q, 200] call _fnSoldatProche) }) then {
                         _p = _q;
                     };
                     _d = _d + 1.5;
@@ -285,23 +369,46 @@ for "_i" from 1 to _nb do {
     // ─── Casanier : assis chez lui ───
     private _posC = [_taille] call _fnQuelquePart;
 
-    private _hommeC = if (_posC isEqualTo []) then { objNull } else {
-        [_grpMaison, selectRandom _classes, _posC] call _fnCreer
+    // La maison d'abord, l'homme ensuite. Un casanier sans chez-lui
+    // restait dans le groupe commun et aurait suivi son chef à travers
+    // le village — soit exactement le comportement militaire qu'on
+    // cherche à supprimer. Pas de maison, pas de casanier : le
+    // peuplement se fera ailleurs au cycle suivant.
+    private _chezLui = [];
+    if !(_posC isEqualTo []) then {
+        private _maisons = (nearestObjects [_posC, ["House"], 80]) select {
+            !([_x] call _fnBatimentInterdit)
+            && { !(([_x] call BIS_fnc_buildingPositions) isEqualTo []) }
+        };
+        if !(_maisons isEqualTo []) then {
+            private _places = [selectRandom _maisons] call BIS_fnc_buildingPositions;
+            if !(_places isEqualTo []) then { _chezLui = selectRandom _places };
+        };
+    };
+
+    private _hommeC = if (_chezLui isEqualTo []) then { objNull } else {
+        [_grpMaison, selectRandom _classes, _chezLui] call _fnCreer
     };
 
     if (!isNull _hommeC) then {
-        // La garnison cherche un bâtiment autour de SA position, pas
-        // du centre de la zone : sinon elle le téléporte à l'autre
-        // bout, possiblement dans une maison que le joueur regarde.
-        private _postes = [_posC, nil, [_hommeC], 90, 1, false, true] call hds_fnc_garnison;
+        // ─── Plus de hds_fnc_garnison ───
+        // C'est la fonction de garnison MILITAIRE : elle pose
+        // BIS_fnc_ambientAnimCombat, setUnitPos "UP" et disableAI
+        // "PATH" — un homme en poste à sa fenêtre. Sur un civil, ça
+        // donnait exactement ce qu'on reprochait au système : des
+        // habitants qui se comportent comme des soldats. Et elle
+        // cherchait ses places dans "Building", bunkers et hangars
+        // compris.
+        _hommeC setPosATL _chezLui;
+        _hommeC setDir (random 360);
+        [_hommeC, "SIT_LOW_U", "NONE"] call BIS_fnc_ambientAnim;
 
-        // Assis chez lui, oui — mais seulement s'il a trouvé un chez
-        // lui. Sans bâtiment, la garnison se rabat sur une défense de
-        // zone, et l'animation le figeait en tailleur au milieu d'un
-        // champ.
-        if (_postes > 0) then {
-            [_hommeC, "SIT_LOW_U", "NONE"] call BIS_fnc_ambientAnim;
-        };
+        // Un civil ne tient pas une position : ni posture de combat,
+        // ni IA de déplacement coupée.
+        (group _hommeC) setBehaviour "CARELESS";
+        (group _hommeC) setCombatMode "BLUE";
+        _hommeC setUnitPos "AUTO";
+
         _hommeC enableDynamicSimulation true;
 
         // Civil d'ambiance : fnc_hds_vie_civile le retirera quand plus
@@ -345,11 +452,63 @@ for "_i" from 1 to _nb do {
         // D'où des piétons parfaitement vivants et parfaitement
         // immobiles, avec le seul waypoint que tout groupe
         // possède d'office. C'est la version CBA qu'il fallait.
-        // Autour de SON quartier, pas du centre de la zone — lequel
-        // est la position du joueur. Tous les piétons convergeaient
-        // vers lui, ce qui est à la fois étrange à regarder et une
-        // façon de rendre visible ce qu'on vient de cacher.
-        [_grpP, _depart, 140, 4] call CBA_fnc_taskPatrol;
+        // ─── Une ronde LE LONG DES RUES ───
+        // taskPatrol tire ses étapes au hasard dans un cercle : le
+        // piéton finissait au milieu d'un champ ou dans un bois, ce qui
+        // n'a aucun sens pour quelqu'un qui habite là. On construit
+        // donc les étapes nous-mêmes, chacune au bord d'une rue, et
+        // aucune à moins de 60 m d'un soldat : il passe près d'une
+        // position tenue, il ne la traverse jamais.
+        private _etapes = [];
+        private _ruesProches = _depart nearRoads 220;
+
+        {
+            if (count _etapes < 5) then {
+                private _a = getPos _x;
+                private _assezLoin = true;
+                { if ((_a distance2D _x) < 70) then { _assezLoin = false } } forEach _etapes;
+
+                if (_assezLoin) then {
+                    private _cap = random 360;
+                    private _d = 4;
+                    private _q = [];
+                    while { _d <= 12 && { _q isEqualTo [] } } do {
+                        private _c = [
+                            (_a select 0) + _d * sin _cap,
+                            (_a select 1) + _d * cos _cap,
+                            0
+                        ];
+                        if (!(isOnRoad _c)
+                            && { !(surfaceIsWater _c) }
+                            && { !([_c, 60] call _fnSoldatProche) }) then {
+                            _q = _c;
+                        };
+                        _d = _d + 2;
+                    };
+                    if !(_q isEqualTo []) then { _etapes pushBack _q };
+                };
+            };
+            // Quarante candidats mélangés, pas trois cents : en ville
+            // nearRoads en rend beaucoup, et chacun se paie en tests
+            // contre tous les soldats, pour chaque piéton.
+        } forEach ((_ruesProches call BIS_fnc_arrayShuffle) select [0, 40]);
+
+        if (count _etapes >= 2) then {
+            {
+                private _wp = _grpP addWaypoint [_x, 0];
+                _wp setWaypointType "MOVE";
+                _wp setWaypointSpeed "LIMITED";
+                _wp setWaypointBehaviour "CARELESS";
+                _wp setWaypointCompletionRadius 8;
+            } forEach _etapes;
+
+            private _boucle = _grpP addWaypoint [_depart, 0];
+            _boucle setWaypointType "CYCLE";
+        } else {
+            // Aucune rue exploitable : il reste chez lui plutôt que
+            // d'aller se perdre dans les bois.
+            [_grpP, _depart, 60, 3] call CBA_fnc_taskPatrol;
+        };
         _grpP setBehaviour "CARELESS";
         _grpP setSpeedMode "LIMITED";
 
