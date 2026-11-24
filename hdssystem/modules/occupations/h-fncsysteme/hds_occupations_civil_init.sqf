@@ -16,6 +16,11 @@
  *               registre choisit une faction civile du serveur.
  *       ""      idem
  * 4 : <BOOL>   marqueur visible sur la carte
+ * 5 : <NUMBER> distance minimale d'apparition (m). -1 : celle posée par
+ *              fnc_hds_vie_civile, sinon la moitié du rayon.
+ * 6 : <BOOL>   population permanente : elle n'est pas balayée quand
+ *              les joueurs s'éloignent. À réserver au scénario, qui
+ *              sait ce qu'il demande.
  *
  * exemple : [[0,0,0], 0, 300, 0, false] call fnc_occupations_civil_init;
  *
@@ -46,8 +51,20 @@ params [
     ["_taille",          300],
     ["_nationalite",     0],
     ["_marqueurvisible", false],
-    ["_distanceMin",     -1]
+    ["_distanceMin",     -1],
+    ["_permanent",       false]
 ];
+
+// ─── Balayé ou pas ───
+// fnc_hds_vie_civile supprime tout ce qui porte « hds_civil_ambiance »
+// dès que le joueur le plus proche dépasse la distance d'oubli. C'est
+// ce qui économise le serveur quand la population suit les joueurs.
+//
+// Une population posée exprès par le scénario, elle, doit tenir : sans
+// ça, peupler un village à trois kilomètres des joueurs ne sert à rien,
+// il serait vidé huit secondes plus tard. _permanent à true retire la
+// marque — et donc aussi le ménage automatique : c'est au scénario de
+// savoir ce qu'il demande.
 
 // ─── À quelle distance d'un joueur on a le droit d'apparaître ───
 // -1 : la valeur posée par fnc_hds_vie_civile, sinon la moitié du
@@ -460,7 +477,9 @@ for "_i" from 1 to _nb do {
         // aucun joueur ne sera assez près pour le voir. La marque est
         // ce qui le distingue d'un otage ou d'un VIP posé par une
         // mission, qui ne doit jamais être balayé.
-        _hommeC setVariable ["hds_civil_ambiance", true, true];
+        if (!_permanent) then {
+            _hommeC setVariable ["hds_civil_ambiance", true, true];
+        };
         _poses = _poses + 1;
     };
 
@@ -572,7 +591,9 @@ for "_i" from 1 to _nb do {
         // Pas de simulation dynamique sur un pieton d'ambiance : il
         // est deja supprime des qu'il s'eloigne, le geler en plus ne
         // fait qu'ajouter une facon de le voir immobile.
-        _hommeP setVariable ["hds_civil_ambiance", true, true];
+        if (!_permanent) then {
+            _hommeP setVariable ["hds_civil_ambiance", true, true];
+        };
         _poses = _poses + 1;
     };
 };

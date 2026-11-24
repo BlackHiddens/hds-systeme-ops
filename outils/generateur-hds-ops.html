@@ -1192,6 +1192,24 @@ const STEPS = {
     gen: (O) => `[${O.rayon}, ${O.faction}, ${O.toujours}, ${O.diff}, ${O.lieux}] spawn fnc_hds_presence_hostile;`,
   },
 
+  civils: {
+    label: 'Peupler une zone',
+    group: 'Missions et ennemis',
+    help: 'Des habitants chez eux et des piétons dans les rues, à un endroit précis. '
+      + 'Rien à poser dans l’éditeur.',
+    fields: [
+      pos('centre', 'Centre de la zone', '4506.92, 5729.59, 0'),
+      int('taille', 'Rayon de la zone (m)', 300, 1),
+      int('ratio', 'Habitants à ajouter', -1, -1),
+      bool('permanent', 'La population reste quand les joueurs s’éloignent', true),
+      adv(fac('population', 'Population civile', 0)),
+      adv(int('apparition', 'Distance mini d’apparition (m)', -1, -1)),
+      adv(bool('visible', 'Zone visible sur la carte', false)),
+    ],
+    sum: (v) => `${v.taille} m, ${num(v.ratio) < 0 ? 'densit\u00e9 du sc\u00e9nario' : num(v.ratio) + ' habitants'}`,
+    gen: (O) => `[${O.centre}, ${O.ratio}, ${O.taille}, ${O.population}, ${O.visible}, ${O.apparition}, ${O.permanent}] spawn fnc_occupations_civil_init;`,
+  },
+
   otage: {
     label: 'Libérer des otages',
     group: 'Tâches',
@@ -1578,6 +1596,9 @@ const DESCR = {
   auto: (v) => `Enchaîne ${num(v.nb)} ${plural(v.nb, 'mission automatique', 'missions automatiques')} de ${num(v.rayon)} m de rayon, dans les ${locPlain(v.lieux)}. ${v.civils ? 'Des civils sont présents.' : 'Il n’y a pas de civils.'} ${v.alea ? 'L’ennemi est tiré au hasard à chaque mission.' : 'L’ennemi est la faction ' + fname(v.faction) + '.'} Chaque mission compte ${num(v.taches)} ${plural(v.taches, 'objectif', 'objectifs')} (difficulté ${num(v.diff)}).`,
   occupation: (v) => `Des ennemis de la faction ${fname(v.faction)} (garnisons, patrouilles, véhicules) occupent une zone de ${num(v.taille)} m ${at(v.centre)}.`,
   surveillance: (v) => `La zone de ${num(v.rayon)} m ${at(v.centre)} est surveillée par la faction ${fname(v.faction)}. Quand un joueur y entre, ${num(v.min) === num(v.max) ? num(v.min) : 'de ' + num(v.min) + ' à ' + num(v.max)} ${plural(v.max, 'événement surprise', 'événements surprises')} se déclenchent (renfort, contre-attaque, hélicoptère, insertion).`,
+  civils: (v) => `Des habitants et des pi\u00e9tons peuplent une zone de ${num(v.taille)} m ${around(v.centre)}.`
+    + ` ${num(v.ratio) < 0 ? 'Leur nombre suit la densit\u00e9 r\u00e9gl\u00e9e plus haut' : num(v.ratio) + ' habitants sont ajout\u00e9s \u00e0 ceux d\u00e9duits des maisons'}.`
+    + `${v.permanent ? ' Ils restent en place m\u00eame quand les joueurs s\u2019\u00e9loignent.' : ' Ils disparaissent quand les joueurs s\u2019\u00e9loignent.'}${shown(v)}`,
   presence: (v) => `Des ennemis de la faction ${fname(v.faction)} sont présents sur ${v.toujours ? 'tous les' : 'environ un quart des'} lieux suivants de la carte : ${locPlain(v.lieux)}. Zones de ${num(v.rayon)} m.`,
 
   otage: (v) => `Libérer ${quoted(v.nom)} (${nameList(v.otages)}), retenus ${around(v.centre)}, et les ramener ${at(v.livraison)}.${consigne(v)}${shown(v)}`,
@@ -2574,6 +2595,7 @@ function svgIco(name, cls) {
    d'avoir lu le mot. */
 const STEP_ICO = {
   auto: 'repeat', occupation: 'flag', surveillance: 'eye', presence: 'map',
+  civils: 'users',
   otage: 'users', collecter: 'box', detruire: 'boom', apprehender: 'lock',
   rejoindre: 'pin', securiser: 'shield', voler: 'car', telecharger: 'terminal',
   personnalisee: 'pen', contreattaque: 'swords', renfortterrestre: 'truck',
@@ -2650,6 +2672,7 @@ document.addEventListener('scroll', hideTip, true);
 const SHORT = {
   centre: 'Position', livraison: 'Livraison', otages: 'Otages', objets: 'Objets', cibles: 'Cibles', cible: 'Cible', objet: 'Objet',
   ok: 'Si réussie', ko: 'Si échouée', nom: 'Nom', desc: 'Consigne', taille: 'Rayon (m)', rayon: 'Rayon (m)', visible: 'Zone visible',
+  population: 'Population', permanent: 'Permanent', apparition: 'Apparition mini',
   faction: 'Faction', nb: 'Missions', diff: 'Difficulté', lieux: 'Lieux', civils: 'Civils', alea: 'Ennemi au hasard', taches: 'Objectifs',
   ratio: 'Densité', min: 'Événements min', max: 'Événements max', toujours: 'Tous les lieux', inf: 'Groupes', veh: 'Véhicules',
   dist: 'Distance (m)', s: 'Durée (s)', n: 'Nombre',
@@ -2683,6 +2706,10 @@ const TIPS = {
   nb: 'Nombre de missions qui s’enchaînent.',
   lieux: 'Types de lieux où les missions peuvent apparaître.',
   civils: 'Des civils sont présents sur place.',
+  population: 'Laisse 0 pour que le serveur choisisse sa faction civile. Si tu en nommes une, prends-en une du camp CIVIL — une faction militaire donnerait des soldats déguisés en passants.',
+  permanent: 'Coché : la population tient toute la partie, c’est ce qu’on veut d’une zone posée exprès. Décoché : elle est balayée dès que les joueurs s’éloignent, comme la vie civile automatique.',
+  apparition: 'Aucun civil ne naît plus près d’un joueur que ça, ni dans son champ de vision. -1 : la valeur réglée dans les réglages de départ.',
+  ratio: 'Habitants ajoutés à ceux déduits du nombre de maisons. -1 : la densité réglée dans les réglages de départ.',
   ratio: 'Densité de l’occupation ennemie.',
   min: 'Minimum d’événements surprises déclenchés quand un joueur entre dans la zone.',
   max: 'Maximum d’événements surprises déclenchés quand un joueur entre dans la zone.',
