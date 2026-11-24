@@ -21,10 +21,14 @@
  * 4 : <NUMBER> portée du trafic (m) — distance maximale d'apparition
  *              des véhicules. -1 : prendre le curseur du menu CBA.
  * 5 : <NUMBER> distance d'oubli des civils (m)
+ * 6 : <NUMBER> distance minimale d'apparition (m) — aucun habitant ni
+ *              voiture garée ne naît plus près d'un joueur que ça, ni
+ *              dans son champ de vision. -1 : la moitié du rayon
+ *              d'ambiance.
  *
  * À lancer avec spawn :
  *   [] spawn fnc_hds_vie_civile;                       // tout par défaut
- *   [12, 6, true, 400, 600, 1400] spawn fnc_hds_vie_civile;
+ *   [12, 6, true, 500, 600, 1400, 250] spawn fnc_hds_vie_civile;
  *
  * ─────────────────────────────────────────────────────────────
  * ── Le scénario décide, pas le menu ──
@@ -95,9 +99,10 @@ params [
     ["_densite",       -1],
     ["_habitants",     -1],
     ["_peupler",       true],
-    ["_rayonAmbiance", 300],
+    ["_rayonAmbiance", 500],
     ["_portee",        -1],
-    ["_distanceOubli", 1200]
+    ["_distanceOubli", 1200],
+    ["_distanceMin",   -1]
 ];
 
 if (!canSuspend) exitWith {
@@ -156,9 +161,33 @@ hds_vie_habitants = if (_habitantsAuto) then {
 // joueur est entré en ville.
 hds_vie_plafond = (round hds_vie_densite) max 14;
 
+// ════════════════════════════════════════════════════════
+// NE RIEN FAIRE APPARAÎTRE SOUS LE NEZ DU JOUEUR
+// ════════════════════════════════════════════════════════
+// Les habitants et les voitures garées naissaient dans un DISQUE
+// centré sur le joueur, de 0 au rayon d'ambiance : donc jusqu'à ses
+// pieds. On les voyait apparaître.
+//
+// La circulation d'Engima, elle, ne pope pas — parce qu'elle naît
+// dans un ANNEAU, entre portée×0,6 et portée. C'est cette logique
+// qu'on reprend ici, pour tout le reste de la vie civile.
+//
+// Le rayon d'ambiance par défaut passe donc de 300 à 500 m : un
+// anneau a besoin de place. À 300 m, la zone interdite mangeait
+// presque toute la zone de peuplement.
+hds_vie_distance_min = if (_distanceMin < 0) then {
+    _rayonAmbiance * 0.5
+} else {
+    _distanceMin
+};
+if (hds_vie_distance_min > (_rayonAmbiance * 0.85)) then {
+    hds_vie_distance_min = _rayonAmbiance * 0.85;
+};
+
 ["INFO", "CIVILS", format [
-    "reglages retenus : trafic %1, habitants %2, portee %3 m, ambiance %4 m, oubli %5 m (source : %6)",
-    hds_vie_densite, hds_vie_habitants, hds_vie_portee, _rayonAmbiance, _distanceOubli,
+    "reglages retenus : trafic %1, habitants %2, portee %3 m, ambiance %4 m, apparition a %5 m mini, oubli %6 m (source : %7)",
+    hds_vie_densite, hds_vie_habitants, hds_vie_portee, _rayonAmbiance,
+    round hds_vie_distance_min, _distanceOubli,
     (["scenario", "menu CBA"] select (_densite < 0))
 ]] call hds_fnc_log;
 
@@ -368,10 +397,10 @@ while {true} do {
                             // qu'un hameau, à densité demandée égale.
                             private _plus = round (hds_vie_habitants * ([_p] call _fnFacteur));
 
-                            [_p, _plus, _rayonAmbiance, _idCiv, false]
+                            [_p, _plus, _rayonAmbiance, _idCiv, false, hds_vie_distance_min]
                                 spawn fnc_occupations_civil_init;
 
-                            [_p, _rayonAmbiance, -1, _idCiv]
+                            [_p, _rayonAmbiance, -1, _idCiv, hds_vie_distance_min]
                                 spawn hds_fnc_voituresGarees;
 
                             _recents pushBack [_p, time + 90];

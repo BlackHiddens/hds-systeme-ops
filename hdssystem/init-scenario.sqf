@@ -17,9 +17,14 @@
 // agglomérations, entretenus autour des joueurs et supprimés dès qu'ils
 // s'éloignent. Tout se règle ici, dans l'ordre :
 //   véhicules en circulation, habitants par agglomération, poser
-//   l'ambiance, rayon d'ambiance (m), portée du trafic (m), oubli (m).
+//   l'ambiance, rayon d'ambiance (m), portée du trafic (m), oubli (m),
+//   distance minimale d'apparition (m).
 // -1 : laisser le curseur du menu CBA décider.
-[8, -1, true, 300, 500, 1200] spawn fnc_hds_vie_civile;
+//
+// Le dernier chiffre est celui qui empêche de VOIR apparaître les
+// civils : rien ne naît à moins de 250 m d'un joueur, ni dans son
+// champ de vision.
+[8, -1, true, 500, 500, 1200, 250] spawn fnc_hds_vie_civile;
 
 // ----- Déroulé -----
 

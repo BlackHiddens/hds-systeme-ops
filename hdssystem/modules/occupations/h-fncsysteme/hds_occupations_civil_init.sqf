@@ -45,8 +45,19 @@ params [
     ["_ratio",           -1],
     ["_taille",          300],
     ["_nationalite",     0],
-    ["_marqueurvisible", false]
+    ["_marqueurvisible", false],
+    ["_distanceMin",     -1]
 ];
+
+// ─── À quelle distance d'un joueur on a le droit d'apparaître ───
+// -1 : la valeur posée par fnc_hds_vie_civile, sinon la moitié du
+// rayon. C'est la même idée que l'anneau d'Engima, qui ne fait naître
+// ses voitures qu'entre portée×0,6 et portée : on ne voit jamais rien
+// apparaître, et c'est pour ça que la circulation, elle, ne pope pas.
+if (_distanceMin < 0) then {
+    _distanceMin = missionNamespace getVariable ["hds_vie_distance_min", _taille * 0.5];
+};
+if (_distanceMin > (_taille * 0.85)) then { _distanceMin = _taille * 0.85 };
 
 // ─── Pourquoi -1 et plus 0 ───
 // 0 voulait dire « n'ajoute rien au nombre déduit des maisons ». Pour
@@ -123,7 +134,11 @@ _secteur setMarkerAlpha 0;
 // ─── Combien d'habitants ───
 private _places = [_taille, _centre, ["house"]] call fnc_objectif_liste_batimentsetplaces;
 private _nbMaisons = if (count _places > 0) then { count (_places select 0) } else { 0 };
-private _nb = round ((_nbMaisons / 3) + _ratio);
+// Le nombre déduit des maisons est plafonné : sur un rayon large et
+// en pleine ville, « une maison sur trois » donnait trente habitants,
+// soit soixante unités avec les piétons. La densité voulue par le
+// scénario doit rester le terme qui décide.
+private _nb = round (((_nbMaisons / 3) min 10) + _ratio);
 if (_nb < 1) then { _nb = 1 };
 
 if (hdssysteme) then {
@@ -161,29 +176,132 @@ private _fnCreer = {
     if (_neufs isEqualTo []) then { objNull } else { _neufs select 0 }
 };
 
-// Une position au hasard dans la zone.
-private _fnQuelquePart = {
-    params ["_rayon"];
-    private _a = random 360;
-    private _d = sqrt (random 1) * _rayon;
-    [(_centre select 0) + _d * sin _a, (_centre select 1) + _d * cos _a, 0]
+// ═════════════════════════════════════════════════════════
+// NE PAS APPARAÎTRE SOUS LE NEZ DU JOUEUR
+// ════════════════════════════════════════════════════════
+// Deux règles, parce que la distance seule ne suffit pas : un homme
+// qui se matérialise droit devant se remarque même à 300 m, alors
+// qu'à 150 m dans le dos personne ne le voit jamais arriver.
+private _joueurs = allPlayers select {
+    alive _x && { !(_x isKindOf "HeadlessClient_F") }
 };
 
-// Les routes de l'agglomération : un piéton se voit sur un trottoir,
-// pas au fond d'un jardin.
+// Le cône de vision se mesure sur la direction du CORPS, pas du
+// regard : eyeDirection vaut ce que vaut sa synchronisation vers le
+// serveur, alors que getDir est fiable partout. On ne vise pas la
+// précision, juste « pas droit devant ».
+//
+// Deux précautions d'écriture :
+//   — le cône ne vaut que pour un joueur ASSEZ PROCHE. Celui de
+//     quelqu'un à deux kilomètres balaierait un tiers de la carte, et
+//     plus aucune position ne passerait.
+//   — aucun exitWith ici. Dans un then imbriqué, il sort du TEST et
+//     non de la boucle : c'est exactement le bug qui, dans ce même
+//     fichier, ne laissait jamais apparaître qu'un seul habitant.
+private _fnVisible = {
+    params ["_pos"];
+    private _vu = false;
+    {
+        if (!_vu) then {
+            private _d = _x distance2D _pos;
+            if (_d < _distanceMin) then {
+                _vu = true;
+            } else {
+                if (_d < (_taille * 2)) then {
+                    private _ecart = abs ((((_x getDir _pos) - (getDir (vehicle _x))) + 540) % 360 - 180);
+                    if (_ecart < 50) then { _vu = true };
+                };
+            };
+        };
+    } forEach _joueurs;
+    _vu
+};
+
+// Une position dans l'ANNEAU, pas dans le disque : entre la distance
+// minimale et le bord de la zone. Si rien ne convient après vingt
+// tirages — un joueur au milieu d'un village regarde forcément
+// quelque part — on rend [] et on ne place rien. Le cycle suivant
+// retentera, huit secondes plus tard, depuis un autre endroit.
+private _fnQuelquePart = {
+    params ["_rayon"];
+    private _min = _distanceMin min (_rayon * 0.85);
+    private _trouve = [];
+    for "_essai" from 1 to 20 do {
+        if (_trouve isEqualTo []) then {
+            private _a = random 360;
+            // Tirage uniforme en SURFACE sur l'anneau, sinon tout se
+            // tasse contre le bord intérieur.
+            private _d = sqrt (_min * _min + random ((_rayon * _rayon) - (_min * _min)));
+            private _p = [
+                (_centre select 0) + _d * sin _a,
+                (_centre select 1) + _d * cos _a,
+                0
+            ];
+            if (!([_p] call _fnVisible)) then { _trouve = _p };
+        };
+    };
+    _trouve
+};
+
+// Les routes de l'agglomération. Un piéton marche le long d'une rue,
+// mais JAMAIS dessus : il naissait à getPos d'un tronçon, c'est-à-dire
+// au milieu du bitume, là où le trafic d'Engima lui passe dessus.
 private _routes = _centre nearRoads _taille;
+
+// À côté de la route, pas dessus : on s'éloigne dans une direction au
+// hasard jusqu'à quitter le bitume. Les voitures garées, elles, ont
+// besoin de l'axe exact de la rue pour s'aligner dessus ; un piéton
+// n'a besoin que de ne pas être sur la chaussée.
+private _fnBordDeRoute = {
+    private _p = [];
+    for "_essai" from 1 to 12 do {
+        if (_p isEqualTo []) then {
+            private _r = selectRandom _routes;
+            private _a = getPos _r;
+            if (((_a distance2D _centre) <= _taille) && { !([_a] call _fnVisible) }) then {
+                private _cap = random 360;
+                private _d = 4;
+                while { _d <= 14 && { _p isEqualTo [] } } do {
+                    private _q = [
+                        (_a select 0) + _d * sin _cap,
+                        (_a select 1) + _d * cos _cap,
+                        0
+                    ];
+                    if (!(isOnRoad _q) && { !(surfaceIsWater _q) } && { !([_q] call _fnVisible) }) then {
+                        _p = _q;
+                    };
+                    _d = _d + 1.5;
+                };
+            };
+        };
+    };
+    _p
+};
 
 private _poses = 0;
 
 for "_i" from 1 to _nb do {
 
     // ─── Casanier : assis chez lui ───
-    private _hommeC = [_grpMaison, selectRandom _classes, [_taille] call _fnQuelquePart]
-        call _fnCreer;
+    private _posC = [_taille] call _fnQuelquePart;
+
+    private _hommeC = if (_posC isEqualTo []) then { objNull } else {
+        [_grpMaison, selectRandom _classes, _posC] call _fnCreer
+    };
 
     if (!isNull _hommeC) then {
-        [_centre, nil, [_hommeC], _taille, 1, false, true] call hds_fnc_garnison;
-        [_hommeC, "SIT_LOW_U", "NONE"] call BIS_fnc_ambientAnim;
+        // La garnison cherche un bâtiment autour de SA position, pas
+        // du centre de la zone : sinon elle le téléporte à l'autre
+        // bout, possiblement dans une maison que le joueur regarde.
+        private _postes = [_posC, nil, [_hommeC], 90, 1, false, true] call hds_fnc_garnison;
+
+        // Assis chez lui, oui — mais seulement s'il a trouvé un chez
+        // lui. Sans bâtiment, la garnison se rabat sur une défense de
+        // zone, et l'animation le figeait en tailleur au milieu d'un
+        // champ.
+        if (_postes > 0) then {
+            [_hommeC, "SIT_LOW_U", "NONE"] call BIS_fnc_ambientAnim;
+        };
         _hommeC enableDynamicSimulation true;
 
         // Civil d'ambiance : fnc_hds_vie_civile le retirera quand plus
@@ -195,17 +313,19 @@ for "_i" from 1 to _nb do {
     };
 
     // ─── Piéton : il déambule, et on le voit ───
-    private _depart = if (_routes isEqualTo []) then {
-        [_taille] call _fnQuelquePart
-    } else {
-        getPos (selectRandom _routes)
+    // Le bord d'une route d'abord, pour qu'il ait l'air d'aller
+    // quelque part ; n'importe où dans l'anneau si aucune rue ne
+    // convient. Jamais sur la chaussée.
+    private _depart = if (_routes isEqualTo []) then { [] } else { call _fnBordDeRoute };
+    if (_depart isEqualTo []) then { _depart = [_taille] call _fnQuelquePart };
+
+    private _grpP = if (_depart isEqualTo []) then { grpNull } else { createGroup [civilian, true] };
+    private _hommeP = if (isNull _grpP) then { objNull } else {
+        [_grpP, selectRandom _classes, _depart] call _fnCreer
     };
 
-    private _grpP = createGroup [civilian, true];
-    private _hommeP = [_grpP, selectRandom _classes, _depart] call _fnCreer;
-
     if (isNull _hommeP) then {
-        deleteGroup _grpP;
+        if (!isNull _grpP) then { deleteGroup _grpP };
     } else {
         _hommeP setPosATL _depart;
 
@@ -225,7 +345,11 @@ for "_i" from 1 to _nb do {
         // D'où des piétons parfaitement vivants et parfaitement
         // immobiles, avec le seul waypoint que tout groupe
         // possède d'office. C'est la version CBA qu'il fallait.
-        [_grpP, _centre, (_taille * 0.6), 4] call CBA_fnc_taskPatrol;
+        // Autour de SON quartier, pas du centre de la zone — lequel
+        // est la position du joueur. Tous les piétons convergeaient
+        // vers lui, ce qui est à la fois étrange à regarder et une
+        // façon de rendre visible ce qu'on vient de cacher.
+        [_grpP, _depart, 140, 4] call CBA_fnc_taskPatrol;
         _grpP setBehaviour "CARELESS";
         _grpP setSpeedMode "LIMITED";
 

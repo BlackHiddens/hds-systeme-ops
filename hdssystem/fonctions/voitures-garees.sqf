@@ -45,8 +45,44 @@ params [
     ["_centre",  [0, 0, 0], [[]]],
     ["_rayon",   300, [0]],
     ["_nombre",  -1, [0]],
-    ["_faction", civilian]
+    ["_faction", civilian],
+    ["_distanceMin", -1, [0]]
 ];
+
+// ─── Ne pas se garer sous le nez du joueur ───
+// Une voiture qui apparaît au bord du trottoir à trente mètres, ça se
+// voit autant qu'un piéton. Même anneau que les habitants, même
+// raison : c'est la logique d'Engima, dont la circulation ne pope pas
+// parce qu'elle naît entre portée×0,6 et portée.
+if (_distanceMin < 0) then {
+    _distanceMin = missionNamespace getVariable ["hds_vie_distance_min", _rayon * 0.5];
+};
+if (_distanceMin > (_rayon * 0.85)) then { _distanceMin = _rayon * 0.85 };
+
+private _joueurs = allPlayers select {
+    alive _x && { !(_x isKindOf "HeadlessClient_F") }
+};
+
+// Aucun exitWith imbriqué : dans un then, il sort du test et non de la
+// boucle.
+private _fnVisible = {
+    params ["_p"];
+    private _vu = false;
+    {
+        if (!_vu) then {
+            private _d = _x distance2D _p;
+            if (_d < _distanceMin) then {
+                _vu = true;
+            } else {
+                if (_d < (_rayon * 2)) then {
+                    private _ecart = abs ((((_x getDir _p) - (getDir (vehicle _x))) + 540) % 360 - 180);
+                    if (_ecart < 50) then { _vu = true };
+                };
+            };
+        };
+    } forEach _joueurs;
+    _vu
+};
 
 if (count _centre < 2) exitWith { 0 };
 
@@ -109,9 +145,12 @@ private _refusEau   = 0;
 private _refusObjet = 0;
 private _refusArbre = 0;
 private _refusPente = 0;
+private _refusVu    = 0;
 
 private _fnLibre = {
     params ["_p"];
+
+    if ([_p] call _fnVisible) exitWith { _refusVu = _refusVu + 1; false };
 
     if (surfaceIsWater _p) exitWith { _refusEau = _refusEau + 1; false };
 
@@ -146,6 +185,14 @@ while { _poses < _nombre && { _essais < (_nombre * 25) } } do {
     // Deux voitures collées au même tronçon, ça ne ressemble à rien.
     private _dejaVu = false;
     { if ((_a distance2D _x) < 18) exitWith { _dejaVu = true } } forEach _vues;
+
+    // Tronçon sous le nez d'un joueur : inutile de lui chercher un
+    // bas-côté, il serait refusé au bout du compte. On s'épargne une
+    // dizaine d'essais par voiture.
+    if (!_dejaVu && { [_a] call _fnVisible }) then {
+        _dejaVu = true;
+        _refusVu = _refusVu + 1;
+    };
 
     if (!_dejaVu) then {
 
@@ -232,11 +279,11 @@ while { _poses < _nombre && { _essais < (_nombre * 25) } } do {
 
 if (_poses > 0 || { hdssysteme }) then {
     ["INFO", "CIVILS", format [
-        "voitures garees : %1 sur %2 autour de [%3,%4] - %5 route(s) habitee(s), %6 essais - refus : eau %7, objet %8, arbre %9, pente %10",
+        "voitures garees : %1 sur %2 autour de [%3,%4] - %5 route(s) habitee(s), %6 essais, distance min %7 m - refus : vue %8, eau %9, objet %10, arbre %11, pente %12",
         _poses, _nombre,
         round (_centre select 0), round (_centre select 1),
-        count _routes, _essais,
-        _refusEau, _refusObjet, _refusArbre, _refusPente
+        count _routes, _essais, round _distanceMin,
+        _refusVu, _refusEau, _refusObjet, _refusArbre, _refusPente
     ]] call hds_fnc_log;
 };
 

@@ -1118,7 +1118,8 @@ const CONTEXT_FIELDS = [
      une partie en cours : il ne decide pas de la mission. */
   adv(int('civTrafic', 'Vehicules civils en circulation', 8, 0)),
   adv(int('civHabitants', 'Habitants par agglomeration', -1, -1)),
-  adv(int('civRayon', 'Rayon de l’ambiance civile (m)', 300, 50)),
+  adv(int('civRayon', 'Rayon de l’ambiance civile (m)', 500, 50)),
+  adv(int('civApparition', 'Distance mini d’apparition (m)', 250, 0)),
   adv(int('civPortee', 'Portee du trafic (m)', 500, 120)),
   adv(int('civOubli', 'Distance d’oubli des civils (m)', 1200, 200)),
 ];
@@ -1446,7 +1447,8 @@ function generate(state) {
   if (state.ctx.trafic) {
     lines.push(
       '[' + C.O.civTrafic + ', ' + C.O.civHabitants + ', true, ' + C.O.civRayon
-      + ', ' + C.O.civPortee + ', ' + C.O.civOubli + '] spawn fnc_hds_vie_civile;'
+      + ', ' + C.O.civPortee + ', ' + C.O.civOubli + ', ' + C.O.civApparition
+      + '] spawn fnc_hds_vie_civile;'
     );
   }
   lines.push(`[${C.O.renforts}, ${C.O.camp}] call fnc_renfort_init;`);
@@ -2655,7 +2657,8 @@ const SHORT = {
   'ctx.initiales': 'Tâches faites', 'ctx.remuneration': 'Récompense', 'ctx.vehicules': 'Véhicules', 'ctx.renforts': 'Renforts', 'ctx.camp': 'Camp',
   'ctx.trafic': 'Vie civile', 'param.base': 'Marqueur de base',
   'ctx.civTrafic': 'Trafic', 'ctx.civHabitants': 'Habitants',
-  'ctx.civRayon': 'Rayon ambiance', 'ctx.civPortee': 'Portee trafic',
+  'ctx.civRayon': 'Rayon ambiance', 'ctx.civApparition': 'Apparition mini',
+  'ctx.civPortee': 'Portee trafic',
   'ctx.civOubli': 'Oubli',
 };
 const TIPS = {
@@ -2695,6 +2698,7 @@ const TIPS = {
   'ctx.civTrafic': 'Nombre de véhicules civils entretenus autour des joueurs, pas sur toute la carte. 0 : aucune circulation. Le chiffre monte tout seul quand un joueur entre en ville.',
   'ctx.civHabitants': 'Civils ajoutés dans chaque agglomération, en plus de ceux déduits du nombre de maisons. -1 : la moitié du trafic.',
   'ctx.civRayon': 'Autour de chaque joueur : la distance dans laquelle on cherche des maisons à peupler et où l’on gare des voitures vides.',
+  'ctx.civApparition': 'Aucun habitant ni voiture garée ne naît plus près d’un joueur que ça, ni dans son champ de vision : c’est ce qui empêche de voir les civils apparaître. Doit rester bien en dessous du rayon d’ambiance, sinon il ne reste plus de place pour les poser.',
   'ctx.civPortee': 'Distance maximale d’apparition des véhicules civils. Plus court = plus dense autour des joueurs.',
   'ctx.civOubli': 'Au-delà de cette distance du joueur le plus proche, un civil d’ambiance est supprimé. C’est ce qui économise les ressources du serveur.',
   'param.base': 'Nom du marqueur posé sur ta base dans l’éditeur.',
